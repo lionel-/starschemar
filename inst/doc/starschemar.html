@@ -1,0 +1,3066 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Jose Samos (jsamos@ugr.es)" />
+
+<meta name="date" content="2020-07-24" />
+
+<title>starschemar: Obtaining Star Schemas from Flat Tables</title>
+
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">starschemar: Obtaining Star Schemas from Flat Tables</h1>
+<h4 class="author">Jose Samos (<a href="mailto:jsamos@ugr.es" class="email">jsamos@ugr.es</a>)</h4>
+<h4 class="date">2020-07-24</h4>
+
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>The <em>multidimensional data model</em> was defined in the 1990s with the aim of supporting data analysis. Data in multidimensional systems is obtained from operational systems and is transformed to adapt it to the new structure.</p>
+<p>Transformations can be carried out using professional ETL (extract, transform and load) tools. Recently, tools aimed at end users have emerged, which are also aimed at performing transformation operations. All these tools are very useful to carry out the transformation process, they provide a development environment to define the transformation operations in a general way.</p>
+<p>Frequently, the operations to be performed aim to transform a flat table (with data that comes from operational systems) into a star schema (which implements a multidimensional system). With the tools mentioned above, this transformation can be carried out, but it requires a lot of work. I am not aware of any tools with operations designed to specifically support this transformation process.</p>
+<p>This is the main objective of <code>starschemar</code> package: Define <strong>transformations that allow obtaining star schemas from flat tables</strong> easily. In addition, it includes basic data cleaning operations and incremental data refresh operations, adapted to this context.</p>
+<p>The rest of this document is structured as follows: First, basic concepts of dimensional modelling and star schemas are summarized. The following is an illustrative example of how the package works. Then, the operations available in the package are briefly presented. Finally, the document ends with conclusions and bibliography.</p>
+</div>
+<div id="dimensional-modelling-and-star-schemas" class="section level1">
+<h1>Dimensional modelling and star schemas</h1>
+<p>The content of this section is a summary based mainly on <span class="citation">Adamson (2010)</span> and <span class="citation">Kimball and Ross (2013)</span>. It is intended to present the fundamental concepts of the area that are relevant to understand the functionality, naming and use of the <code>starschemar</code> package.</p>
+<div id="dimensional-modelling" class="section level2">
+<h2>Dimensional modelling</h2>
+<p>Dimensional modelling aims to obtain simple data models. Simplicity is sought for two reasons: so that decision-makers can easily understand the data, and also so that they can be easily queried.</p>
+<p>In dimensional modelling, the analysis of a business process is performed <em>modelling how it is measured</em>. The measures are called <em>facts</em>, and the descriptors of the context of the facts are <em>dimensions</em>. Facts are numerical data, and decision makers want to see them at various levels of detail, defined by dimensions.</p>
+<p>Not all numerical data is a fact (some tools consider it that way). In dimensional modelling the designer has to differentiate between facts and dimensions. Some criteria are considered to distinguish between them, for example:</p>
+<ul>
+<li>If it can be defined at different levels of detail then it is a fact.</li>
+<li>If it is quantitative and takes continuous values, then it is a fact.</li>
+<li>If it provides context then it is a dimension.</li>
+</ul>
+<p>Sometimes there are no measures associated with the business process, it is simply recorded that the combination of dimensions has occurred. This situation is often called <em>factless facts</em>, <span class="citation">Jensen, Pedersen, and Thomsen (2010)</span> prefer to call it <em>measureless facts</em>. In any case, including when no other measures are available, a measure can be considered that represents the number of times the combination of dimension values occurs.</p>
+<div id="dimensions-and-dimension-attributes" class="section level3">
+<h3>Dimensions and dimension attributes</h3>
+<p>Attributes considered by the designer as dimensions can be grouped taking into account the natural affinities between them. In particular, they can be grouped as they describe the “who, what, where, when, how and why” associated with the modelled business process. Two attributes share a natural affinity when they are only related in one context. When their relationships are determined by transactions or activities, they can occur in multiple contexts, if this occurs, they must be located in different dimensions.</p>
+<p>In this way, a <em>dimension</em> is made up of a set of naturally related <em>dimension attributes</em> that describe the context of facts. Dimensions are used for two purposes: fact <em>selection</em> and fact <em>grouping</em> with the desired level of detail.</p>
+<p>Additionally, in the dimensions <em>hierarchies</em> with <em>levels</em> and <em>descriptors</em> can be defined. More details can be found at <span class="citation">Jensen, Pedersen, and Thomsen (2010)</span>. These concepts are not used in the current version of the package.</p>
+</div>
+<div id="facts-and-measures" class="section level3">
+<h3>Facts and measures</h3>
+<p>A fact has a <em>granularity</em>, which is determined by the attributes of the dimensions that are considered at each moment. Thus, a measure in a fact has two components, the <em>numerical property</em> of the fact and an <em>formula</em>, frequently the SUM aggregation function, that allows combining several values of this measure to obtain a new value of the same measure with a coarser granularity <span class="citation">(Jensen, Pedersen, and Thomsen 2010)</span>.</p>
+<p>According to their behaviour to obtain a coarser granularity, three types of measures are distinguished: additive, semi-additive and non-additive. For <em>additive measures</em>, SUM is always a valid formula that maintains the meaning of the measure when the granularity changes. For <em>semi-additive measures</em>, there is no point in using SUM when changing the level of detail in any of the dimensions because the meaning of the measure changes, this frequently occurs in dimensions that represents time and measures representing inventory level. For <em>non-additive measures</em>, values cannot be combined across any dimension using SUM because the result obtained has a different meaning from the original measure (generally occurs with ratios, percentages or unit amounts such as unit cost or unit price).</p>
+<p>The most useful measures are additive. If we have non-additive measures, they can generally be redefined from other additive measures.</p>
+</div>
+</div>
+<div id="star-schemas" class="section level2">
+<h2>Star schemas</h2>
+<p>Dimensional models implemented in RDBMS (Relational Database Management Systems) using a table for each dimension are called <em>star schemas</em> because of their resemblance to a star-like structure: A <em>fact table</em> in the centre and <em>dimension tables</em> around it. Thus, dimension attributes are columns of the respective dimension tables, and measures are columns of the fact table.</p>
+<p>Other possible implementations on RDBMS normalize dimensions and are known as <em>snowflake schema</em>. More details can be found at <span class="citation">Jensen, Pedersen, and Thomsen (2010)</span>. This is not considered in this package.</p>
+<div id="dimension-tables" class="section level3">
+<h3>Dimension tables</h3>
+<p>Dimension tables contain the context associated with business process measures. Although they can contain any type of data, numerical data is generally not used for dimension attributes because some query tools consider any numeric data as a measure.</p>
+<p>Dimension attributes with NULL value are a source of problems when querying since DBMS and query tools sometimes handle them inconsistently, the result depends on the product. It is recommended to avoid the use of NULL and replace them with a descriptive text. In the case of dates, it is recommended to replace the NULL values with an arbitrary date in the very far future.</p>
+<div id="surrogate-keys" class="section level4">
+<h4>Surrogate keys</h4>
+<p>A dimension table contains dimension attributes and also a <em>surrogate key</em> column. This column is a unique identifier that has no intrinsic meaning: It is generally an integer and is the primary key for the dimension table. In <span class="citation">Adamson (2010)</span> surrogate keys are easily identifiable by the suffix &quot;_key&quot; in the column name (and this criterion has also been applied in <code>starschemar</code> package).</p>
+<p>Dimension tables also contain key columns that uniquely identify associated entities in an operational system. The separation of surrogate keys and natural keys allows the star schema to store changes in dimensions. Therefore, the use of surrogate keys in dimensions is a solution to the SCD (slowly changing dimensions) problem. This problem is not specifically addressed in this version of this package.</p>
+</div>
+<div id="special-dimensions" class="section level4">
+<h4>Special dimensions</h4>
+<p>In some cases, for the sake of simplicity, it is helpful to create a table that contains dimension attributes that have no natural affinities to each other, generally these are low-cardinality flags and indicators. The result is what is known as a <em>junk dimension</em>. They do not require any special support, only the designer’s will to define them.</p>
+<p>Sometimes some dimension attributes are left in the fact table, usually transaction identifiers. It is considered as the primary key of a dimension that does not have an associated table, for this reason it is known as a <em>degenerate dimension</em>. Degenerate dimensions are not allowed in this package.</p>
+<p>A single dimension can be referenced multiple times in a fact table, with each reference linked to a different logical role for each dimension. These separate dimension views, with unique attribute column names, are called <em>role dimensions</em> and the common dimension is called a <em>role-playing dimension</em>.</p>
+<p>Associated with multiple star schemas we have the <em>conformed dimensions</em> that are presented in section <a href="#conformed-dimensions">Conformed dimensions</a>.</p>
+</div>
+</div>
+<div id="fact-table" class="section level3">
+<h3>Fact table</h3>
+<p>At the centre of a star schema is the fact table. In addition to containing measures, the fact table includes foreign keys that refer to each of the surrogate keys in the dimension tables.</p>
+<div id="primary-key" class="section level4">
+<h4>Primary key</h4>
+<p>A subset of foreign keys, along with possibly degenerate dimensions, is considered to form the primary key of the fact table.</p>
+<p>In <code>starschemar</code> package, since degenerate dimensions are not allowed, the primary key is made up of a subset of foreign keys.</p>
+</div>
+<div id="grain" class="section level4">
+<h4>Grain</h4>
+<p>The subset of dimensions that forms the primary key defines the level of detail stored in the fact table, which is known as the fact table’s <em>grain</em>. In the design process, it is very important for the designer to clearly define the grain of the fact table (it is usually defined by listing the dimensions whose surrogate keys form its primary key): it is a way to ensure that all the facts are stored at the same level of detail.</p>
+<p>At the finest grain, a row in the fact table corresponds to the measures of an event and vice versa, it is not influenced by the possible reports that may be obtained. When two facts have different grains, they should be set on different fact tables.</p>
+</div>
+</div>
+<div id="multiple-fact-tables" class="section level3">
+<h3>Multiple fact tables</h3>
+<p>It is frequent the need to have several fact tables for various reasons:</p>
+<ul>
+<li><p>We find measurements with different grain.</p></li>
+<li><p>There are measures that do not occur simultaneously, for example, when one occurs, we have no value for others and vice versa.</p></li>
+</ul>
+<p>In reality it is about different business processes, each one has to have its own fact table but they have dimensions in common. This is known as a <a href="https://www.geeksforgeeks.org/fact-constellation-in-data-warehouse-modelling/"><em>fact constellation</em></a> which corresponds to the Kimball <em>enterprise data warehouse bus architecture</em>.</p>
+</div>
+<div id="conformed-dimensions" class="section level3">
+<h3>Conformed dimensions</h3>
+<p>When star schemas share a set of common dimensions, these dimensions are called <em>conformed dimensions</em>.</p>
+<p>There are several possibilities to have conformed dimensions, the most obvious form is that the dimension tables share <em>structure</em> and <em>content</em>, that is, they are identical dimensions. This is the one considered in this version of the <code>starschemar</code> package.</p>
+</div>
+</div>
+<div id="additional-operations" class="section level2">
+<h2>Additional operations</h2>
+<div id="cleaning-and-conforming-data" class="section level3">
+<h3>Cleaning and conforming data</h3>
+<p>When data is loaded into a star schema, errors or inconsistencies can be discovered in some of them. In some cases, it is best to make corrections at the source of the data, in operational systems. Sometimes this is not possible and there is no other option but to modify the data before loading it into the star schema or even when it is already loaded.</p>
+<p>Inconsistencies are often found in dimensions, when dimensions are integrated into one, for example to generate a role-playing dimension or conformed dimensions. Support for modifying dimension data is provided in the package.</p>
+</div>
+<div id="incremental-refresh" class="section level3">
+<h3>Incremental refresh</h3>
+<p>When a star schema is built, an initial load is performed with all available data from a moment in time onwards.</p>
+<p>Operational systems continue to operate and produce data. If we want to incorporate these data into the star schema, we have two possibilities:</p>
+<ul>
+<li><p>Carry out a new load with all the data available at that time.</p></li>
+<li><p>Perform an incremental refresh with only the new data.</p></li>
+</ul>
+<p>In order to carry out this second option, the CDC (change data capture) system allows to exclusively obtain the new data produced.</p>
+<p>In this package, it has been considered that we can obtain the new data, possibly mixed with updates to data already incorporated into the star schema, in order to carry out an incremental refresh of star schemas with them.</p>
+</div>
+</div>
+</div>
+<div id="an-illustrative-example" class="section level1">
+<h1>An illustrative example</h1>
+<div id="starting-data-sets" class="section level2">
+<h2>Starting data sets</h2>
+<p>To illustrate how the package works we will use a small part of the <a href="https://catalog.data.gov/dataset/deaths-in-122-u-s-cities-1962-2016-122-cities-mortality-reporting-system">Deaths in 122 U.S. cities - 1962-2016. 122 Cities Mortality Reporting System</a> data set<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. Specifically, only the data for the first 11 weeks of 1962 are considered.</p>
+<table>
+<colgroup>
+<col width="2%"></col>
+<col width="2%"></col>
+<col width="7%"></col>
+<col width="3%"></col>
+<col width="3%"></col>
+<col width="5%"></col>
+<col width="13%"></col>
+<col width="5%"></col>
+<col width="11%"></col>
+<col width="12%"></col>
+<col width="5%"></col>
+<col width="13%"></col>
+<col width="13%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">Year</th>
+<th align="center">WEEK</th>
+<th align="center">Week Ending Date</th>
+<th align="center">REGION</th>
+<th align="center">State</th>
+<th align="center">City</th>
+<th align="center">Pneumonia and Influenza Deaths</th>
+<th align="center">All Deaths</th>
+<th align="center">&lt;1 year (all cause deaths)</th>
+<th align="center">1-24 years (all cause deaths)</th>
+<th align="center">25-44 years</th>
+<th align="center">45-64 years (all cause deaths)</th>
+<th align="center">65+ years (all cause deaths)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">11</td>
+<td align="center">262</td>
+<td align="center">10</td>
+<td align="center">8</td>
+<td align="center">11</td>
+<td align="center">87</td>
+<td align="center">146</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-13</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">11</td>
+<td align="center">270</td>
+<td align="center">14</td>
+<td align="center">8</td>
+<td align="center">11</td>
+<td align="center">70</td>
+<td align="center">167</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-20</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">5</td>
+<td align="center">237</td>
+<td align="center">11</td>
+<td align="center">8</td>
+<td align="center">10</td>
+<td align="center">66</td>
+<td align="center">142</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">4</td>
+<td align="center">1962-01-27</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">12</td>
+<td align="center">285</td>
+<td align="center">22</td>
+<td align="center">7</td>
+<td align="center">8</td>
+<td align="center">73</td>
+<td align="center">175</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">5</td>
+<td align="center">1962-02-03</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">5</td>
+<td align="center">245</td>
+<td align="center">15</td>
+<td align="center">9</td>
+<td align="center">17</td>
+<td align="center">62</td>
+<td align="center">142</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">6</td>
+<td align="center">1962-02-10</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">11</td>
+<td align="center">284</td>
+<td align="center">16</td>
+<td align="center">8</td>
+<td align="center">16</td>
+<td align="center">79</td>
+<td align="center">165</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">7</td>
+<td align="center">1962-02-17</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">8</td>
+<td align="center">227</td>
+<td align="center">11</td>
+<td align="center">7</td>
+<td align="center">13</td>
+<td align="center">71</td>
+<td align="center">125</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">8</td>
+<td align="center">1962-02-24</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">10</td>
+<td align="center">270</td>
+<td align="center">14</td>
+<td align="center">9</td>
+<td align="center">10</td>
+<td align="center">85</td>
+<td align="center">152</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">9</td>
+<td align="center">1962-03-03</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">16</td>
+<td align="center">278</td>
+<td align="center">15</td>
+<td align="center">11</td>
+<td align="center">15</td>
+<td align="center">79</td>
+<td align="center">158</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">10</td>
+<td align="center">1962-03-10</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">11</td>
+<td align="center">297</td>
+<td align="center">11</td>
+<td align="center">7</td>
+<td align="center">18</td>
+<td align="center">80</td>
+<td align="center">181</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">11</td>
+<td align="center">1962-03-17</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">16</td>
+<td align="center">290</td>
+<td align="center">16</td>
+<td align="center">7</td>
+<td align="center">21</td>
+<td align="center">74</td>
+<td align="center">172</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+<td align="center">3</td>
+<td align="center">46</td>
+<td align="center">3</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">16</td>
+<td align="center">27</td>
+</tr>
+</tbody>
+</table>
+<p>In the table above, the first rows of the original data are shown. For each week and city, mortality figures by age group and cause, considered separately, are included (i.e., the combination of age group and cause is not included). In the cause, only a distinction is made between pneumonia or influenza and others.</p>
+<p>It can be seen that there is only one measure, <em>deaths</em>, defined at two different granularities: <em>week-city-cause</em> (data in columns “Pneumonia and Influenza Deaths” and “All Deaths”) and <em>week-city-age bracket</em> (data from the 5 columns on the right). This means that we will need <strong>two fact tables</strong> to include all the data in star schemas.</p>
+<p>As the data is partially in the form of a pivot table, from these data two tables have been generated<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>, one for each granularity. Additionally, the following operations have been carried out:</p>
+<ul>
+<li><p>To show the incremental refresh, the data has been selected: On the one hand, the first 9 weeks were considered, and on the other, each of the following weeks separately.</p></li>
+<li><p>To show the possibilities of data modification operations to correct errors, some data has been modified to generate missing data or errors.</p></li>
+</ul>
+<table>
+<colgroup>
+<col width="8%"></col>
+<col width="8%"></col>
+<col width="23%"></col>
+<col width="10%"></col>
+<col width="9%"></col>
+<col width="10%"></col>
+<col width="17%"></col>
+<col width="10%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">Year</th>
+<th align="center">WEEK</th>
+<th align="center">Week Ending Date</th>
+<th align="center">REGION</th>
+<th align="center">State</th>
+<th align="center">City</th>
+<th align="center">Age Range</th>
+<th align="center">Deaths</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">&lt;1 year</td>
+<td align="center">10</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">1-24 years</td>
+<td align="center">8</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">25-44 years</td>
+<td align="center">11</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">45-64 years</td>
+<td align="center">87</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">65+ years</td>
+<td align="center">146</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-13</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">&lt;1 year</td>
+<td align="center">14</td>
+</tr>
+</tbody>
+</table>
+<p>In the table above, the first rows of the flat table that contains the data according to the age bracket are shown.</p>
+<p>The following table shows the first 18 rows of the flat table containing data based on cause of death. The calculated column <em>Other Deaths</em> has been added. Here you can see some missing data (columns <em>Year</em> and <em>WEEK</em>), errors (value “Bridgepor” in column <em>City</em>) and how there are only data from the first 9 weeks.</p>
+<table>
+<colgroup>
+<col width="5%"></col>
+<col width="5%"></col>
+<col width="15%"></col>
+<col width="7%"></col>
+<col width="6%"></col>
+<col width="10%"></col>
+<col width="26%"></col>
+<col width="10%"></col>
+<col width="12%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">Year</th>
+<th align="center">WEEK</th>
+<th align="center">Week Ending Date</th>
+<th align="center">REGION</th>
+<th align="center">State</th>
+<th align="center">City</th>
+<th align="center">Pneumonia and Influenza Deaths</th>
+<th align="center">All Deaths</th>
+<th align="center">Other Deaths</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">11</td>
+<td align="center">262</td>
+<td align="center">251</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-13</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">11</td>
+<td align="center">270</td>
+<td align="center">259</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-20</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">5</td>
+<td align="center">237</td>
+<td align="center">232</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">4</td>
+<td align="center">1962-01-27</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">12</td>
+<td align="center">285</td>
+<td align="center">273</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">5</td>
+<td align="center">1962-02-03</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">5</td>
+<td align="center">245</td>
+<td align="center">240</td>
+</tr>
+<tr class="even">
+<td align="center">NA</td>
+<td align="center">NA</td>
+<td align="center">1962-02-10</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">11</td>
+<td align="center">284</td>
+<td align="center">273</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">7</td>
+<td align="center">1962-02-17</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">8</td>
+<td align="center">227</td>
+<td align="center">219</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">8</td>
+<td align="center">1962-02-24</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">10</td>
+<td align="center">270</td>
+<td align="center">260</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">9</td>
+<td align="center">1962-03-03</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">16</td>
+<td align="center">278</td>
+<td align="center">262</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+<td align="center">3</td>
+<td align="center">46</td>
+<td align="center">43</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-13</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+<td align="center">2</td>
+<td align="center">43</td>
+<td align="center">41</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-20</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+<td align="center">2</td>
+<td align="center">40</td>
+<td align="center">38</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">4</td>
+<td align="center">1962-01-27</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+<td align="center">4</td>
+<td align="center">46</td>
+<td align="center">42</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">5</td>
+<td align="center">1962-02-03</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+<td align="center">5</td>
+<td align="center">46</td>
+<td align="center">41</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">6</td>
+<td align="center">1962-02-10</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+<td align="center">3</td>
+<td align="center">42</td>
+<td align="center">39</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">7</td>
+<td align="center">1962-02-17</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+<td align="center">1</td>
+<td align="center">35</td>
+<td align="center">34</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">8</td>
+<td align="center">1962-02-24</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+<td align="center">2</td>
+<td align="center">45</td>
+<td align="center">43</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">9</td>
+<td align="center">1962-03-03</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgepor</td>
+<td align="center">3</td>
+<td align="center">46</td>
+<td align="center">43</td>
+</tr>
+</tbody>
+</table>
+<p>To have more layout possibilities to display, new columns with dates have been generated. Next, in both tables, the new columns related to the date that have been added can be seen.</p>
+<table style="width:100%;">
+<colgroup>
+<col width="8%"></col>
+<col width="8%"></col>
+<col width="8%"></col>
+<col width="12%"></col>
+<col width="12%"></col>
+<col width="12%"></col>
+<col width="3%"></col>
+<col width="3%"></col>
+<col width="9%"></col>
+<col width="4%"></col>
+<col width="3%"></col>
+<col width="4%"></col>
+<col width="6%"></col>
+<col width="4%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">Reception Year</th>
+<th align="center">Reception Week</th>
+<th align="center">Reception Date</th>
+<th align="center">Data Availability Year</th>
+<th align="center">Data Availability Week</th>
+<th align="center">Data Availability Date</th>
+<th align="center">Year</th>
+<th align="center">WEEK</th>
+<th align="center">Week Ending Date</th>
+<th align="center">REGION</th>
+<th align="center">State</th>
+<th align="center">City</th>
+<th align="center">Age Range</th>
+<th align="center">Deaths</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-10</td>
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-19</td>
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">&lt;1 year</td>
+<td align="center">10</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-10</td>
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-19</td>
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">1-24 years</td>
+<td align="center">8</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-10</td>
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-19</td>
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">25-44 years</td>
+<td align="center">11</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-10</td>
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-19</td>
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">45-64 years</td>
+<td align="center">87</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-10</td>
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-19</td>
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">65+ years</td>
+<td align="center">146</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-16</td>
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-18</td>
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-13</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">&lt;1 year</td>
+<td align="center">14</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="6%"></col>
+<col width="6%"></col>
+<col width="6%"></col>
+<col width="10%"></col>
+<col width="10%"></col>
+<col width="10%"></col>
+<col width="2%"></col>
+<col width="2%"></col>
+<col width="7%"></col>
+<col width="3%"></col>
+<col width="3%"></col>
+<col width="3%"></col>
+<col width="13%"></col>
+<col width="5%"></col>
+<col width="6%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">Reception Year</th>
+<th align="center">Reception Week</th>
+<th align="center">Reception Date</th>
+<th align="center">Data Availability Year</th>
+<th align="center">Data Availability Week</th>
+<th align="center">Data Availability Date</th>
+<th align="center">Year</th>
+<th align="center">WEEK</th>
+<th align="center">Week Ending Date</th>
+<th align="center">REGION</th>
+<th align="center">State</th>
+<th align="center">City</th>
+<th align="center">Pneumonia and Influenza Deaths</th>
+<th align="center">All Deaths</th>
+<th align="center">Other Deaths</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-10</td>
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-19</td>
+<td align="center">1962</td>
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">11</td>
+<td align="center">262</td>
+<td align="center">251</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-16</td>
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-18</td>
+<td align="center">1962</td>
+<td align="center">2</td>
+<td align="center">1962-01-13</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">11</td>
+<td align="center">270</td>
+<td align="center">259</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">4</td>
+<td align="center">1962-01-23</td>
+<td align="center">1962</td>
+<td align="center">4</td>
+<td align="center">1962-01-25</td>
+<td align="center">1962</td>
+<td align="center">3</td>
+<td align="center">1962-01-20</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">5</td>
+<td align="center">237</td>
+<td align="center">232</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">4</td>
+<td align="center">1962-01-27</td>
+<td align="center">1962</td>
+<td align="center">6</td>
+<td align="center">1962-02-07</td>
+<td align="center">1962</td>
+<td align="center">4</td>
+<td align="center">1962-01-27</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">12</td>
+<td align="center">285</td>
+<td align="center">273</td>
+</tr>
+<tr class="odd">
+<td align="center">1962</td>
+<td align="center">6</td>
+<td align="center">1962-02-08</td>
+<td align="center">1962</td>
+<td align="center">7</td>
+<td align="center">1962-02-14</td>
+<td align="center">1962</td>
+<td align="center">5</td>
+<td align="center">1962-02-03</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">5</td>
+<td align="center">245</td>
+<td align="center">240</td>
+</tr>
+<tr class="even">
+<td align="center">1962</td>
+<td align="center">6</td>
+<td align="center">1962-02-10</td>
+<td align="center">1962</td>
+<td align="center">7</td>
+<td align="center">1962-02-12</td>
+<td align="center">NA</td>
+<td align="center">NA</td>
+<td align="center">1962-02-10</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+<td align="center">11</td>
+<td align="center">284</td>
+<td align="center">273</td>
+</tr>
+</tbody>
+</table>
+<p>These are the flat tables that will be considered as a starting point to obtain star schemas from them in this example. They are available in the package: <code>mrs_age</code> and <code>mrs_cause</code> respectively.</p>
+</div>
+<div id="dimensional-modelling-1" class="section level2">
+<h2>Dimensional modelling</h2>
+<p>For each flat table, the goal is to define the attributes that correspond to facts and those that are dimensions. For facts, measures and their aggregation functions have to be defined. For dimensions, attributes with natural affinity must be grouped. Each attribute can only appear once in the definition.</p>
+<div id="data-according-to-age-range" class="section level3">
+<h3>Data according to age range</h3>
+<p>To avoid having to write the name of the attributes of the table, with the following function we can have them in the form of a string. Thus, we can copy and paste each name as needed.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">dput</span>(<span class="kw">colnames</span>(mrs_age))</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="co">#&gt; c(&quot;Reception Year&quot;, &quot;Reception Week&quot;, &quot;Reception Date&quot;, &quot;Data Availability Year&quot;, </span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="co">#&gt; &quot;Data Availability Week&quot;, &quot;Data Availability Date&quot;, &quot;Year&quot;, &quot;WEEK&quot;, </span></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="co">#&gt; &quot;Week Ending Date&quot;, &quot;REGION&quot;, &quot;State&quot;, &quot;City&quot;, &quot;Age Range&quot;, &quot;Deaths&quot;</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="co">#&gt; )</span></span></code></pre></div>
+<p>The definition of the dimensional model for the data considered is shown below.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">library</span>(tidyr)</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">library</span>(starschemar)</span>
+<span id="cb2-3"><a href="#cb2-3"></a></span>
+<span id="cb2-4"><a href="#cb2-4"></a>dm_mrs_age &lt;-<span class="st"> </span><span class="kw">dimensional_model</span>() <span class="op">%&gt;%</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="st">  </span><span class="kw">define_fact</span>(</span>
+<span id="cb2-6"><a href="#cb2-6"></a>    <span class="dt">name =</span> <span class="st">&quot;mrs_age&quot;</span>,</span>
+<span id="cb2-7"><a href="#cb2-7"></a>    <span class="dt">measures =</span> <span class="kw">c</span>(</span>
+<span id="cb2-8"><a href="#cb2-8"></a>      <span class="st">&quot;Deaths&quot;</span></span>
+<span id="cb2-9"><a href="#cb2-9"></a>    ),</span>
+<span id="cb2-10"><a href="#cb2-10"></a>    <span class="dt">agg_functions =</span> <span class="kw">c</span>(</span>
+<span id="cb2-11"><a href="#cb2-11"></a>      <span class="st">&quot;SUM&quot;</span></span>
+<span id="cb2-12"><a href="#cb2-12"></a>    ),</span>
+<span id="cb2-13"><a href="#cb2-13"></a>    <span class="dt">nrow_agg =</span> <span class="st">&quot;nrow_agg&quot;</span></span>
+<span id="cb2-14"><a href="#cb2-14"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a><span class="st">  </span><span class="kw">define_dimension</span>(</span>
+<span id="cb2-16"><a href="#cb2-16"></a>    <span class="dt">name =</span> <span class="st">&quot;when&quot;</span>,</span>
+<span id="cb2-17"><a href="#cb2-17"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(</span>
+<span id="cb2-18"><a href="#cb2-18"></a>      <span class="st">&quot;Week Ending Date&quot;</span>,</span>
+<span id="cb2-19"><a href="#cb2-19"></a>      <span class="st">&quot;WEEK&quot;</span>,</span>
+<span id="cb2-20"><a href="#cb2-20"></a>      <span class="st">&quot;Year&quot;</span></span>
+<span id="cb2-21"><a href="#cb2-21"></a>    )</span>
+<span id="cb2-22"><a href="#cb2-22"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb2-23"><a href="#cb2-23"></a><span class="st">  </span><span class="kw">define_dimension</span>(</span>
+<span id="cb2-24"><a href="#cb2-24"></a>    <span class="dt">name =</span> <span class="st">&quot;when_available&quot;</span>,</span>
+<span id="cb2-25"><a href="#cb2-25"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(</span>
+<span id="cb2-26"><a href="#cb2-26"></a>      <span class="st">&quot;Data Availability Date&quot;</span>,</span>
+<span id="cb2-27"><a href="#cb2-27"></a>      <span class="st">&quot;Data Availability Week&quot;</span>,</span>
+<span id="cb2-28"><a href="#cb2-28"></a>      <span class="st">&quot;Data Availability Year&quot;</span></span>
+<span id="cb2-29"><a href="#cb2-29"></a>    )</span>
+<span id="cb2-30"><a href="#cb2-30"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb2-31"><a href="#cb2-31"></a><span class="st">  </span><span class="kw">define_dimension</span>(</span>
+<span id="cb2-32"><a href="#cb2-32"></a>    <span class="dt">name =</span> <span class="st">&quot;where&quot;</span>,</span>
+<span id="cb2-33"><a href="#cb2-33"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(</span>
+<span id="cb2-34"><a href="#cb2-34"></a>      <span class="st">&quot;REGION&quot;</span>,</span>
+<span id="cb2-35"><a href="#cb2-35"></a>      <span class="st">&quot;State&quot;</span>,</span>
+<span id="cb2-36"><a href="#cb2-36"></a>      <span class="st">&quot;City&quot;</span></span>
+<span id="cb2-37"><a href="#cb2-37"></a>    )</span>
+<span id="cb2-38"><a href="#cb2-38"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb2-39"><a href="#cb2-39"></a><span class="st">  </span><span class="kw">define_dimension</span>(</span>
+<span id="cb2-40"><a href="#cb2-40"></a>    <span class="dt">name =</span> <span class="st">&quot;who&quot;</span>,</span>
+<span id="cb2-41"><a href="#cb2-41"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(</span>
+<span id="cb2-42"><a href="#cb2-42"></a>      <span class="st">&quot;Age Range&quot;</span></span>
+<span id="cb2-43"><a href="#cb2-43"></a>    )</span>
+<span id="cb2-44"><a href="#cb2-44"></a>  )</span></code></pre></div>
+<p>In this case, all the elements have been explicitly defined, including aggregation functions and the name of an additional measure representing the number of rows aggregated, which is always included. Only data from two of the three possible time-related dimensions have been considered.</p>
+</div>
+<div id="data-according-to-cause" class="section level3">
+<h3>Data according to cause</h3>
+<p>In the case of data according to cause of death, the definition of the model is shown below.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>dm_mrs_cause &lt;-<span class="st"> </span><span class="kw">dimensional_model</span>() <span class="op">%&gt;%</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="st">  </span><span class="kw">define_fact</span>(</span>
+<span id="cb3-3"><a href="#cb3-3"></a>    <span class="dt">name =</span> <span class="st">&quot;mrs_cause&quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4"></a>    <span class="dt">measures =</span> <span class="kw">c</span>(</span>
+<span id="cb3-5"><a href="#cb3-5"></a>      <span class="st">&quot;Pneumonia and Influenza Deaths&quot;</span>,</span>
+<span id="cb3-6"><a href="#cb3-6"></a>      <span class="st">&quot;Other Deaths&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a>    ),</span>
+<span id="cb3-8"><a href="#cb3-8"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a><span class="st">  </span><span class="kw">define_dimension</span>(</span>
+<span id="cb3-10"><a href="#cb3-10"></a>    <span class="dt">name =</span> <span class="st">&quot;when&quot;</span>,</span>
+<span id="cb3-11"><a href="#cb3-11"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(</span>
+<span id="cb3-12"><a href="#cb3-12"></a>      <span class="st">&quot;Week Ending Date&quot;</span>,</span>
+<span id="cb3-13"><a href="#cb3-13"></a>      <span class="st">&quot;WEEK&quot;</span>,</span>
+<span id="cb3-14"><a href="#cb3-14"></a>      <span class="st">&quot;Year&quot;</span></span>
+<span id="cb3-15"><a href="#cb3-15"></a>    )</span>
+<span id="cb3-16"><a href="#cb3-16"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb3-17"><a href="#cb3-17"></a><span class="st">  </span><span class="kw">define_dimension</span>(</span>
+<span id="cb3-18"><a href="#cb3-18"></a>    <span class="dt">name =</span> <span class="st">&quot;when_received&quot;</span>,</span>
+<span id="cb3-19"><a href="#cb3-19"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(</span>
+<span id="cb3-20"><a href="#cb3-20"></a>      <span class="st">&quot;Reception Date&quot;</span>,</span>
+<span id="cb3-21"><a href="#cb3-21"></a>      <span class="st">&quot;Reception Week&quot;</span>,</span>
+<span id="cb3-22"><a href="#cb3-22"></a>      <span class="st">&quot;Reception Year&quot;</span></span>
+<span id="cb3-23"><a href="#cb3-23"></a>    )</span>
+<span id="cb3-24"><a href="#cb3-24"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb3-25"><a href="#cb3-25"></a><span class="st">  </span><span class="kw">define_dimension</span>(</span>
+<span id="cb3-26"><a href="#cb3-26"></a>    <span class="dt">name =</span> <span class="st">&quot;when_available&quot;</span>,</span>
+<span id="cb3-27"><a href="#cb3-27"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(</span>
+<span id="cb3-28"><a href="#cb3-28"></a>      <span class="st">&quot;Data Availability Date&quot;</span>,</span>
+<span id="cb3-29"><a href="#cb3-29"></a>      <span class="st">&quot;Data Availability Week&quot;</span>,</span>
+<span id="cb3-30"><a href="#cb3-30"></a>      <span class="st">&quot;Data Availability Year&quot;</span></span>
+<span id="cb3-31"><a href="#cb3-31"></a>    )</span>
+<span id="cb3-32"><a href="#cb3-32"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb3-33"><a href="#cb3-33"></a><span class="st">  </span><span class="kw">define_dimension</span>(</span>
+<span id="cb3-34"><a href="#cb3-34"></a>    <span class="dt">name =</span> <span class="st">&quot;where&quot;</span>,</span>
+<span id="cb3-35"><a href="#cb3-35"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(</span>
+<span id="cb3-36"><a href="#cb3-36"></a>      <span class="st">&quot;REGION&quot;</span>,</span>
+<span id="cb3-37"><a href="#cb3-37"></a>      <span class="st">&quot;State&quot;</span>,</span>
+<span id="cb3-38"><a href="#cb3-38"></a>      <span class="st">&quot;City&quot;</span></span>
+<span id="cb3-39"><a href="#cb3-39"></a>    )</span>
+<span id="cb3-40"><a href="#cb3-40"></a>  )</span></code></pre></div>
+<p>If no aggregation function is indicated, by default, SUM is considered. Although not explicitly stated, it also includes by default the measure relative to the number of rows aggregated. In this case, the three dimensions related to the date have been defined.</p>
+</div>
+</div>
+<div id="star-schema-and-constellation-definition" class="section level2">
+<h2>Star schema and constellation definition</h2>
+<div id="star-schema-definition" class="section level3">
+<h3>Star schema definition</h3>
+<p>To define a star schema, we need a flat table and a dimensional model defined from it. To define a star schema, we need a flat table and a dimensional model defined from it. Once defined, we can apply format modification operations to it.</p>
+<div id="data-according-to-age-range-1" class="section level4">
+<h4>Data according to age range</h4>
+<p>The basic definition operation of a star schema is shown below<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>st_mrs_age &lt;-<span class="st"> </span><span class="kw">star_schema</span>(mrs_age, dm_mrs_age)</span></code></pre></div>
+<p>The first rows of the obtained dimension and fact tables are shown below.</p>
+<table style="width:61%;">
+<colgroup>
+<col width="15%"></col>
+<col width="26%"></col>
+<col width="9%"></col>
+<col width="9%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_key</th>
+<th align="center">Week Ending Date</th>
+<th align="center">WEEK</th>
+<th align="center">Year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1962-01-13</td>
+<td align="center">2</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1962-01-20</td>
+<td align="center">3</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1962-01-27</td>
+<td align="center">4</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1962-02-03</td>
+<td align="center">5</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1962-02-10</td>
+<td align="center">6</td>
+<td align="center">1962</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="21%"></col>
+<col width="26%"></col>
+<col width="26%"></col>
+<col width="26%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_available_key</th>
+<th align="center">Data Availability Date</th>
+<th align="center">Data Availability Week</th>
+<th align="center">Data Availability Year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">1</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1962-01-07</td>
+<td align="center">1</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1962-01-08</td>
+<td align="center">2</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1962-01-09</td>
+<td align="center">2</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1962-01-10</td>
+<td align="center">2</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1962-01-11</td>
+<td align="center">2</td>
+<td align="center">1962</td>
+</tr>
+</tbody>
+</table>
+<table style="width:58%;">
+<colgroup>
+<col width="16%"></col>
+<col width="12%"></col>
+<col width="11%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">where_key</th>
+<th align="center">REGION</th>
+<th align="center">State</th>
+<th align="center">City</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgepor</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Hartford</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">New Haven</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Waterbury</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+</tr>
+</tbody>
+</table>
+<table style="width:33%;">
+<colgroup>
+<col width="13%"></col>
+<col width="19%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">who_key</th>
+<th align="center">Age Range</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1-24 years</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">25-44 years</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">45-64 years</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">65+ years</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">&lt;1 year</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="14%"></col>
+<col width="28%"></col>
+<col width="16%"></col>
+<col width="13%"></col>
+<col width="12%"></col>
+<col width="14%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_key</th>
+<th align="center">when_available_key</th>
+<th align="center">where_key</th>
+<th align="center">who_key</th>
+<th align="center">Deaths</th>
+<th align="center">nrow_agg</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">7</td>
+<td align="center">2</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">7</td>
+<td align="center">3</td>
+<td align="center">13</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">7</td>
+<td align="center">4</td>
+<td align="center">20</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">7</td>
+<td align="center">5</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">21</td>
+<td align="center">1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">21</td>
+<td align="center">2</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+</tbody>
+</table>
+<p>The data from the original flat table has been structured in the form of dimension tables and fact tables. Data in the columns of the original table included in the dimensions is not repeated. A surrogate key has been added to each of the dimension tables that are foreign keys in the fact table.</p>
+<p>Next, we will apply format modification operations to the original structure obtained.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>st_mrs_age &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="st">  </span><span class="kw">role_playing_dimension</span>(</span>
+<span id="cb5-3"><a href="#cb5-3"></a>    <span class="dt">dim_names =</span> <span class="kw">c</span>(<span class="st">&quot;when&quot;</span>, <span class="st">&quot;when_available&quot;</span>),</span>
+<span id="cb5-4"><a href="#cb5-4"></a>    <span class="dt">name =</span> <span class="st">&quot;When Common&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(<span class="st">&quot;date&quot;</span>, <span class="st">&quot;week&quot;</span>, <span class="st">&quot;year&quot;</span>)</span>
+<span id="cb5-6"><a href="#cb5-6"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb5-7"><a href="#cb5-7"></a><span class="st">  </span><span class="kw">snake_case</span>() <span class="op">%&gt;%</span></span>
+<span id="cb5-8"><a href="#cb5-8"></a><span class="st">  </span><span class="kw">character_dimensions</span>(<span class="dt">NA_replacement_value =</span> <span class="st">&quot;Unknown&quot;</span>,</span>
+<span id="cb5-9"><a href="#cb5-9"></a>                       <span class="dt">length_integers =</span> <span class="kw">list</span>(<span class="dt">week =</span> <span class="dv">2</span>))</span></code></pre></div>
+<p>First, a role playing dimension has been defined based on the dimensions related to dates. Then, to work with databases, the names have been adapted to the snake case criterion. Finally, the data type of the attributes of the dimensions has been transformed so that all columns except the date columns are of the character data type, in the case of numerical data, it is allowed to indicate the length of the field to fill with leading zeros, and undefined values have been replaced by the indicated value.</p>
+<p>The first rows of the new dimension and fact tables are shown below.</p>
+<table style="width:83%;">
+<colgroup>
+<col width="20%"></col>
+<col width="31%"></col>
+<col width="15%"></col>
+<col width="15%"></col>
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>when_key</strong></td>
+<td align="center"><strong>week_ending_date</strong></td>
+<td align="center"><strong>week</strong></td>
+<td align="center"><strong>year</strong></td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="22%"></col>
+<col width="25%"></col>
+<col width="25%"></col>
+<col width="25%"></col>
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>when_available_key</strong></td>
+<td align="center"><strong>data_availability_date</strong></td>
+<td align="center"><strong>data_availability_week</strong></td>
+<td align="center"><strong>data_availability_year</strong></td>
+</tr>
+</tbody>
+</table>
+<table style="width:58%;">
+<colgroup>
+<col width="16%"></col>
+<col width="12%"></col>
+<col width="11%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">where_key</th>
+<th align="center">region</th>
+<th align="center">state</th>
+<th align="center">city</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgepor</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Hartford</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">New Haven</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Waterbury</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+</tr>
+</tbody>
+</table>
+<table style="width:33%;">
+<colgroup>
+<col width="13%"></col>
+<col width="19%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">who_key</th>
+<th align="center">age_range</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1-24 years</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">25-44 years</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">45-64 years</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">65+ years</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">&lt;1 year</td>
+</tr>
+</tbody>
+</table>
+<table style="width:62%;">
+<colgroup>
+<col width="25%"></col>
+<col width="18%"></col>
+<col width="9%"></col>
+<col width="9%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_common_key</th>
+<th align="center">date</th>
+<th align="center">week</th>
+<th align="center">year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">01</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1962-01-07</td>
+<td align="center">01</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1962-01-08</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1962-01-09</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1962-01-10</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1962-01-11</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="28%"></col>
+<col width="14%"></col>
+<col width="16%"></col>
+<col width="13%"></col>
+<col width="12%"></col>
+<col width="14%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_available_key</th>
+<th align="center">when_key</th>
+<th align="center">where_key</th>
+<th align="center">who_key</th>
+<th align="center">deaths</th>
+<th align="center">nrow_agg</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">7</td>
+<td align="center">2</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">7</td>
+<td align="center">3</td>
+<td align="center">13</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">7</td>
+<td align="center">4</td>
+<td align="center">20</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">7</td>
+<td align="center">5</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">21</td>
+<td align="center">1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">21</td>
+<td align="center">2</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+</tbody>
+</table>
+<p>In the result, it can be seen that the dimensions related to date are now role dimensions and do not have their own data, a role playing dimension has been generated with the integrated data. The fact table continues to refer to role dimensions, the value of foreign keys has been adapted to the possible new values of the surrogate keys. Additionally it can be seen that the <em>week</em> field now has length 2 and has 0 on the left (this is useful to order numbers in text format).</p>
+</div>
+<div id="data-according-to-cause-1" class="section level4">
+<h4>Data according to cause</h4>
+<p>We are going to define the star schema and apply similar transformations to the other flat table. The transformations can be applied in any order.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>st_mrs_cause &lt;-<span class="st"> </span><span class="kw">star_schema</span>(mrs_cause, dm_mrs_cause) <span class="op">%&gt;%</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="st">  </span><span class="kw">snake_case</span>() <span class="op">%&gt;%</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="st">  </span><span class="kw">character_dimensions</span>(</span>
+<span id="cb6-4"><a href="#cb6-4"></a>    <span class="dt">NA_replacement_value =</span> <span class="st">&quot;Unknown&quot;</span>,</span>
+<span id="cb6-5"><a href="#cb6-5"></a>    <span class="dt">length_integers =</span> <span class="kw">list</span>(</span>
+<span id="cb6-6"><a href="#cb6-6"></a>      <span class="dt">week =</span> <span class="dv">2</span>,</span>
+<span id="cb6-7"><a href="#cb6-7"></a>      <span class="dt">data_availability_week =</span> <span class="dv">2</span>,</span>
+<span id="cb6-8"><a href="#cb6-8"></a>      <span class="dt">reception_week =</span> <span class="dv">2</span></span>
+<span id="cb6-9"><a href="#cb6-9"></a>    )</span>
+<span id="cb6-10"><a href="#cb6-10"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb6-11"><a href="#cb6-11"></a><span class="st">  </span><span class="kw">role_playing_dimension</span>(</span>
+<span id="cb6-12"><a href="#cb6-12"></a>    <span class="dt">dim_names =</span> <span class="kw">c</span>(<span class="st">&quot;when&quot;</span>, <span class="st">&quot;when_received&quot;</span>, <span class="st">&quot;when_available&quot;</span>),</span>
+<span id="cb6-13"><a href="#cb6-13"></a>    <span class="dt">name =</span> <span class="st">&quot;when_common&quot;</span>,</span>
+<span id="cb6-14"><a href="#cb6-14"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(<span class="st">&quot;date&quot;</span>, <span class="st">&quot;week&quot;</span>, <span class="st">&quot;year&quot;</span>)</span>
+<span id="cb6-15"><a href="#cb6-15"></a>  )</span></code></pre></div>
+<p>In this case, since the role playing dimension definition is the last transformation defined, the format of the <em>week</em> column had to be defined in the three date dimensions to obtain an equivalent result. The result obtained is shown below.</p>
+<table style="width:83%;">
+<colgroup>
+<col width="20%"></col>
+<col width="31%"></col>
+<col width="15%"></col>
+<col width="15%"></col>
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>when_key</strong></td>
+<td align="center"><strong>week_ending_date</strong></td>
+<td align="center"><strong>week</strong></td>
+<td align="center"><strong>year</strong></td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="27%"></col>
+<col width="24%"></col>
+<col width="24%"></col>
+<col width="24%"></col>
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>when_received_key</strong></td>
+<td align="center"><strong>reception_date</strong></td>
+<td align="center"><strong>reception_week</strong></td>
+<td align="center"><strong>reception_year</strong></td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="22%"></col>
+<col width="25%"></col>
+<col width="25%"></col>
+<col width="25%"></col>
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>when_available_key</strong></td>
+<td align="center"><strong>data_availability_date</strong></td>
+<td align="center"><strong>data_availability_week</strong></td>
+<td align="center"><strong>data_availability_year</strong></td>
+</tr>
+</tbody>
+</table>
+<table style="width:58%;">
+<colgroup>
+<col width="16%"></col>
+<col width="12%"></col>
+<col width="11%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">where_key</th>
+<th align="center">region</th>
+<th align="center">state</th>
+<th align="center">city</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgepor</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Hartford</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">New Haven</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Waterbury</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+</tr>
+</tbody>
+</table>
+<table style="width:62%;">
+<colgroup>
+<col width="25%"></col>
+<col width="18%"></col>
+<col width="9%"></col>
+<col width="9%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_common_key</th>
+<th align="center">date</th>
+<th align="center">week</th>
+<th align="center">year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">01</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1962-01-07</td>
+<td align="center">01</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1962-01-08</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1962-01-09</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1962-01-10</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1962-01-11</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="17%"></col>
+<col width="16%"></col>
+<col width="8%"></col>
+<col width="9%"></col>
+<col width="26%"></col>
+<col width="12%"></col>
+<col width="8%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_available_key</th>
+<th align="center">when_received_key</th>
+<th align="center">when_key</th>
+<th align="center">where_key</th>
+<th align="center">pneumonia_and_influenza_deaths</th>
+<th align="center">other_deaths</th>
+<th align="center">nrow_agg</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+<td align="center">37</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">21</td>
+<td align="center">5</td>
+<td align="center">32</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">28</td>
+<td align="center">2</td>
+<td align="center">24</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">50</td>
+<td align="center">0</td>
+<td align="center">35</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">61</td>
+<td align="center">12</td>
+<td align="center">207</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">66</td>
+<td align="center">2</td>
+<td align="center">81</td>
+<td align="center">1</td>
+</tr>
+</tbody>
+</table>
+<p>In this case we have three role dimensions defined on a role playing dimension.</p>
+</div>
+</div>
+<div id="constellation-definition" class="section level3">
+<h3>Constellation definition</h3>
+<p>A constellation is defined from a list of star schemas, as shown below.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>ct_mrs &lt;-<span class="st"> </span><span class="kw">constellation</span>(<span class="kw">list</span>(st_mrs_age, st_mrs_cause), <span class="dt">name =</span> <span class="st">&quot;mrs&quot;</span>)</span></code></pre></div>
+<p>All dimensions of the same name in star schemas must be compatible in structure and type of columns, and are defined as conformed dimensions. The conformed dimensions share all the instances of the original dimensions, this implies possible modifications in the surrogate keys that are transmitted to foreign keys of the component fact tables.</p>
+<p>The tables of the obtained conformed dimensions are shown below.</p>
+<table style="width:61%;">
+<colgroup>
+<col width="15%"></col>
+<col width="26%"></col>
+<col width="9%"></col>
+<col width="9%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_key</th>
+<th align="center">week_ending_date</th>
+<th align="center">week</th>
+<th align="center">year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">01</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1962-01-07</td>
+<td align="center">01</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1962-01-08</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1962-01-09</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1962-01-10</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1962-01-11</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="21%"></col>
+<col width="26%"></col>
+<col width="26%"></col>
+<col width="26%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_available_key</th>
+<th align="center">data_availability_date</th>
+<th align="center">data_availability_week</th>
+<th align="center">data_availability_year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">01</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1962-01-07</td>
+<td align="center">01</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1962-01-08</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1962-01-09</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1962-01-10</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1962-01-11</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+</tbody>
+</table>
+<table style="width:58%;">
+<colgroup>
+<col width="16%"></col>
+<col width="12%"></col>
+<col width="11%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">where_key</th>
+<th align="center">region</th>
+<th align="center">state</th>
+<th align="center">city</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgepor</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Hartford</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">New Haven</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Waterbury</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+</tr>
+</tbody>
+</table>
+<p>It can be seen that the conformed dimensions are considered regardless of the type of dimension in the star schema. Definition of conformed dimensions does not imply any change in the definition of dimensions in star schemas: Role and role playing dimensions remain the same, only their rows may have changed.</p>
+</div>
+</div>
+<div id="cleaning-and-conforming-data-1" class="section level2">
+<h2>Cleaning and conforming data</h2>
+<p>We can perform data cleaning on star schema dimensions.</p>
+<div id="definition-of-updates" class="section level3">
+<h3>Definition of updates</h3>
+<p>Using the following code, first of all, we get the names of the dimensions of a star schema, then, we get them by their name (using <code>utils::View</code> function we can see the rows). If there are several role dimensions, it is enough to consult one of them, updates defined on it will be propagated to the rest.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>dim_names &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="st">    </span><span class="kw">get_dimension_names</span>()</span>
+<span id="cb8-3"><a href="#cb8-3"></a></span>
+<span id="cb8-4"><a href="#cb8-4"></a>where &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="st">  </span><span class="kw">get_dimension</span>(<span class="st">&quot;where&quot;</span>)</span>
+<span id="cb8-6"><a href="#cb8-6"></a></span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="co"># View(where)</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a></span>
+<span id="cb8-9"><a href="#cb8-9"></a>when &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb8-10"><a href="#cb8-10"></a><span class="st">  </span><span class="kw">get_dimension</span>(<span class="st">&quot;when&quot;</span>)</span>
+<span id="cb8-11"><a href="#cb8-11"></a></span>
+<span id="cb8-12"><a href="#cb8-12"></a><span class="co"># View(when)</span></span>
+<span id="cb8-13"><a href="#cb8-13"></a><span class="co"># when[when$when_key %in% c(36, 37, 73), ]</span></span>
+<span id="cb8-14"><a href="#cb8-14"></a></span>
+<span id="cb8-15"><a href="#cb8-15"></a>who &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb8-16"><a href="#cb8-16"></a><span class="st">  </span><span class="kw">get_dimension</span>(<span class="st">&quot;who&quot;</span>)</span>
+<span id="cb8-17"><a href="#cb8-17"></a></span>
+<span id="cb8-18"><a href="#cb8-18"></a><span class="co"># View(who)</span></span></code></pre></div>
+<p>Below is a selection of rows involved in update operations that are referred by their surrogate key.</p>
+<table style="width:69%;">
+<colgroup>
+<col width="15%"></col>
+<col width="26%"></col>
+<col width="13%"></col>
+<col width="13%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_key</th>
+<th align="center">week_ending_date</th>
+<th align="center">week</th>
+<th align="center">year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">36</td>
+<td align="center">1962-02-10</td>
+<td align="center">06</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">37</td>
+<td align="center">1962-02-10</td>
+<td align="center">Unknown</td>
+<td align="center">Unknown</td>
+</tr>
+<tr class="odd">
+<td align="center">73</td>
+<td align="center">9999-12-31</td>
+<td align="center">07</td>
+<td align="center">1962</td>
+</tr>
+</tbody>
+</table>
+<p>Updates are defined on dimensions. Various update definition functions are available, as shown below.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>updates_st_mrs_age &lt;-<span class="st"> </span><span class="kw">record_update_set</span>() <span class="op">%&gt;%</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="st">  </span><span class="kw">update_selection_general</span>(</span>
+<span id="cb9-3"><a href="#cb9-3"></a>    <span class="dt">dimension =</span> where,</span>
+<span id="cb9-4"><a href="#cb9-4"></a>    <span class="dt">columns_old =</span> <span class="kw">c</span>(<span class="st">&quot;state&quot;</span>, <span class="st">&quot;city&quot;</span>),</span>
+<span id="cb9-5"><a href="#cb9-5"></a>    <span class="dt">old_values =</span> <span class="kw">c</span>(<span class="st">&quot;CT&quot;</span>, <span class="st">&quot;Bridgepor&quot;</span>),</span>
+<span id="cb9-6"><a href="#cb9-6"></a>    <span class="dt">columns_new =</span> <span class="kw">c</span>(<span class="st">&quot;city&quot;</span>),</span>
+<span id="cb9-7"><a href="#cb9-7"></a>    <span class="dt">new_values =</span> <span class="kw">c</span>(<span class="st">&quot;Bridgeport&quot;</span>)</span>
+<span id="cb9-8"><a href="#cb9-8"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb9-9"><a href="#cb9-9"></a><span class="st">  </span><span class="kw">match_records</span>(<span class="dt">dimension =</span> when,</span>
+<span id="cb9-10"><a href="#cb9-10"></a>                <span class="dt">old =</span> <span class="dv">37</span>,</span>
+<span id="cb9-11"><a href="#cb9-11"></a>                <span class="dt">new =</span> <span class="dv">36</span>) <span class="op">%&gt;%</span></span>
+<span id="cb9-12"><a href="#cb9-12"></a><span class="st">  </span><span class="kw">update_record</span>(</span>
+<span id="cb9-13"><a href="#cb9-13"></a>    <span class="dt">dimension =</span> when,</span>
+<span id="cb9-14"><a href="#cb9-14"></a>    <span class="dt">old =</span> <span class="dv">73</span>,</span>
+<span id="cb9-15"><a href="#cb9-15"></a>    <span class="dt">values =</span> <span class="kw">c</span>(<span class="st">&quot;1962-02-17&quot;</span>, <span class="st">&quot;07&quot;</span>, <span class="st">&quot;1962&quot;</span>)</span>
+<span id="cb9-16"><a href="#cb9-16"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb9-17"><a href="#cb9-17"></a><span class="st">  </span><span class="kw">update_selection</span>(</span>
+<span id="cb9-18"><a href="#cb9-18"></a>    <span class="dt">dimension =</span> who,</span>
+<span id="cb9-19"><a href="#cb9-19"></a>    <span class="dt">columns =</span> <span class="kw">c</span>(<span class="st">&quot;age_range&quot;</span>),</span>
+<span id="cb9-20"><a href="#cb9-20"></a>    <span class="dt">old_values =</span> <span class="kw">c</span>(<span class="st">&quot;&lt;1 year&quot;</span>),</span>
+<span id="cb9-21"><a href="#cb9-21"></a>    <span class="dt">new_values =</span> <span class="kw">c</span>(<span class="st">&quot;1: &lt;1 year&quot;</span>)</span>
+<span id="cb9-22"><a href="#cb9-22"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb9-23"><a href="#cb9-23"></a><span class="st">  </span><span class="kw">update_selection</span>(</span>
+<span id="cb9-24"><a href="#cb9-24"></a>    <span class="dt">dimension =</span> who,</span>
+<span id="cb9-25"><a href="#cb9-25"></a>    <span class="dt">columns =</span> <span class="kw">c</span>(<span class="st">&quot;age_range&quot;</span>),</span>
+<span id="cb9-26"><a href="#cb9-26"></a>    <span class="dt">old_values =</span> <span class="kw">c</span>(<span class="st">&quot;1-24 years&quot;</span>),</span>
+<span id="cb9-27"><a href="#cb9-27"></a>    <span class="dt">new_values =</span> <span class="kw">c</span>(<span class="st">&quot;2: 1-24 years&quot;</span>)</span>
+<span id="cb9-28"><a href="#cb9-28"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb9-29"><a href="#cb9-29"></a><span class="st">  </span><span class="kw">update_selection</span>(</span>
+<span id="cb9-30"><a href="#cb9-30"></a>    <span class="dt">dimension =</span> who,</span>
+<span id="cb9-31"><a href="#cb9-31"></a>    <span class="dt">columns =</span> <span class="kw">c</span>(<span class="st">&quot;age_range&quot;</span>),</span>
+<span id="cb9-32"><a href="#cb9-32"></a>    <span class="dt">old_values =</span> <span class="kw">c</span>(<span class="st">&quot;25-44 years&quot;</span>),</span>
+<span id="cb9-33"><a href="#cb9-33"></a>    <span class="dt">new_values =</span> <span class="kw">c</span>(<span class="st">&quot;3: 25-44 years&quot;</span>)</span>
+<span id="cb9-34"><a href="#cb9-34"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb9-35"><a href="#cb9-35"></a><span class="st">  </span><span class="kw">update_selection</span>(</span>
+<span id="cb9-36"><a href="#cb9-36"></a>    <span class="dt">dimension =</span> who,</span>
+<span id="cb9-37"><a href="#cb9-37"></a>    <span class="dt">columns =</span> <span class="kw">c</span>(<span class="st">&quot;age_range&quot;</span>),</span>
+<span id="cb9-38"><a href="#cb9-38"></a>    <span class="dt">old_values =</span> <span class="kw">c</span>(<span class="st">&quot;45-64 years&quot;</span>),</span>
+<span id="cb9-39"><a href="#cb9-39"></a>    <span class="dt">new_values =</span> <span class="kw">c</span>(<span class="st">&quot;4: 45-64 years&quot;</span>)</span>
+<span id="cb9-40"><a href="#cb9-40"></a>  ) <span class="op">%&gt;%</span></span>
+<span id="cb9-41"><a href="#cb9-41"></a><span class="st">  </span><span class="kw">update_selection</span>(</span>
+<span id="cb9-42"><a href="#cb9-42"></a>    <span class="dt">dimension =</span> who,</span>
+<span id="cb9-43"><a href="#cb9-43"></a>    <span class="dt">columns =</span> <span class="kw">c</span>(<span class="st">&quot;age_range&quot;</span>),</span>
+<span id="cb9-44"><a href="#cb9-44"></a>    <span class="dt">old_values =</span> <span class="kw">c</span>(<span class="st">&quot;65+ years&quot;</span>),</span>
+<span id="cb9-45"><a href="#cb9-45"></a>    <span class="dt">new_values =</span> <span class="kw">c</span>(<span class="st">&quot;5: 65+ years&quot;</span>)</span>
+<span id="cb9-46"><a href="#cb9-46"></a>  )</span></code></pre></div>
+<p>Although in some of the functions the dimension surrogate key is referred to, updates only consider the values of the rest of the columns of the corresponding dimension. In this way, it is achieved that updates can be applied to equivalent dimensions of other star schemas, where the values of the surrogate key do not necessarily coincide with those of the dimension where updates were originally defined.</p>
+</div>
+<div id="updates-application" class="section level3">
+<h3>Updates application</h3>
+<p>Once updates are defined, they can be applied on the star schema from which they have been defined, as shown below.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>st_mrs_age &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="st">  </span><span class="kw">modify_dimension_records</span>(updates_st_mrs_age)</span></code></pre></div>
+<p>The result obtained for the first star schema is shown below.</p>
+<table style="width:83%;">
+<colgroup>
+<col width="20%"></col>
+<col width="31%"></col>
+<col width="15%"></col>
+<col width="15%"></col>
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>when_key</strong></td>
+<td align="center"><strong>week_ending_date</strong></td>
+<td align="center"><strong>week</strong></td>
+<td align="center"><strong>year</strong></td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="22%"></col>
+<col width="25%"></col>
+<col width="25%"></col>
+<col width="25%"></col>
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>when_available_key</strong></td>
+<td align="center"><strong>data_availability_date</strong></td>
+<td align="center"><strong>data_availability_week</strong></td>
+<td align="center"><strong>data_availability_year</strong></td>
+</tr>
+</tbody>
+</table>
+<table style="width:58%;">
+<colgroup>
+<col width="16%"></col>
+<col width="12%"></col>
+<col width="11%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">where_key</th>
+<th align="center">region</th>
+<th align="center">state</th>
+<th align="center">city</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Bridgeport</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Hartford</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">New Haven</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1</td>
+<td align="center">CT</td>
+<td align="center">Waterbury</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Boston</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1</td>
+<td align="center">MA</td>
+<td align="center">Cambridge</td>
+</tr>
+</tbody>
+</table>
+<table style="width:38%;">
+<colgroup>
+<col width="13%"></col>
+<col width="23%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">who_key</th>
+<th align="center">age_range</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1: &lt;1 year</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">2: 1-24 years</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">3: 25-44 years</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">4: 45-64 years</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">5: 65+ years</td>
+</tr>
+</tbody>
+</table>
+<table style="width:62%;">
+<colgroup>
+<col width="25%"></col>
+<col width="18%"></col>
+<col width="9%"></col>
+<col width="9%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">when_common_key</th>
+<th align="center">date</th>
+<th align="center">week</th>
+<th align="center">year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1962-01-06</td>
+<td align="center">01</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">1962-01-07</td>
+<td align="center">01</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">1962-01-08</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="center">1962-01-09</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="center">1962-01-10</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+<tr class="even">
+<td align="center">6</td>
+<td align="center">1962-01-11</td>
+<td align="center">02</td>
+<td align="center">1962</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="13%"></col>
+<col width="16%"></col>
+<col width="28%"></col>
+<col width="14%"></col>
+<col width="12%"></col>
+<col width="14%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">who_key</th>
+<th align="center">where_key</th>
+<th align="center">when_available_key</th>
+<th align="center">when_key</th>
+<th align="center">deaths</th>
+<th align="center">nrow_agg</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">10</td>
+<td align="center">1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">12</td>
+<td align="center">8</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">18</td>
+<td align="center">15</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">23</td>
+<td align="center">22</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">31</td>
+<td align="center">29</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">49</td>
+<td align="center">36</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+</tbody>
+</table>
+<p>It can be seen that the row with the value “Bridgepor” in the <em>city</em> column has disappeared: it has been merged with the row with the correct value. This update has also been transmitted to the fact table. Although it is not seen in the tables, the same has happened with the dates that have been unified by the update.</p>
+<p>The same updates can also be applied to other star schemas with dimensions in common with the original star schema, or to the shaped dimensions of a constellation, as shown below.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>st_mrs_cause &lt;-<span class="st"> </span>st_mrs_cause <span class="op">%&gt;%</span></span>
+<span id="cb11-2"><a href="#cb11-2"></a><span class="st">  </span><span class="kw">modify_dimension_records</span>(updates_st_mrs_age)</span>
+<span id="cb11-3"><a href="#cb11-3"></a></span>
+<span id="cb11-4"><a href="#cb11-4"></a>ct_mrs &lt;-<span class="st"> </span>ct_mrs <span class="op">%&gt;%</span></span>
+<span id="cb11-5"><a href="#cb11-5"></a><span class="st">  </span><span class="kw">modify_conformed_dimension_records</span>(updates_st_mrs_age)</span></code></pre></div>
+<p>In the latter case, the ideal procedure is to apply particular updates to star schemas before forming the constellation and define custom updates for conformed dimensions, this is just an example. Functions are also available to obtain the names of conformed dimensions and the dimensions themselves. Updates on these dimensions are propagated to the corresponding dimensions of the component star schemas.</p>
+</div>
+</div>
+<div id="incremental-refresh-1" class="section level2">
+<h2>Incremental refresh</h2>
+<p>Once we have star schemas built with the data available at the moment, we may obtain additional data, with the same structure as the initial data but from a later time. Sometimes the new data also includes data from previous periods to operate on them.</p>
+<p>Under these conditions, suppose we get the data sets <code>mrs_age_w10</code>, <code>mrs_age_w11</code>, <code>mrs_cause_w10</code>, and <code>mrs_cause_w11</code>, for weeks 10 and 11 (data in star schemas runs through week 9). In all cases, some data from previous periods are included.</p>
+<p>To perform an incremental refresh of a star schema, we must have the new data in the same star schema format. Additionally, if we have done data cleaning, it is likely that we will have to correct part of the corrected errors again over the new data. For this reason, it is best to package all the transformations carried out on the original data in function form so that they can be easily applied to new data.</p>
+<div id="data-according-to-age-range-2" class="section level3">
+<h3>Data according to age range</h3>
+<p>Below you can see the function that groups the transformations defined for the data according to the age range.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>mrs_age_definition &lt;-<span class="st"> </span><span class="cf">function</span>(ft, dm, updates) {</span>
+<span id="cb12-2"><a href="#cb12-2"></a>  <span class="kw">star_schema</span>(ft, dm) <span class="op">%&gt;%</span></span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="st">    </span><span class="kw">role_playing_dimension</span>(</span>
+<span id="cb12-4"><a href="#cb12-4"></a>      <span class="dt">dim_names =</span> <span class="kw">c</span>(<span class="st">&quot;when&quot;</span>, <span class="st">&quot;when_available&quot;</span>),</span>
+<span id="cb12-5"><a href="#cb12-5"></a>      <span class="dt">name =</span> <span class="st">&quot;When Common&quot;</span>,</span>
+<span id="cb12-6"><a href="#cb12-6"></a>      <span class="dt">attributes =</span> <span class="kw">c</span>(<span class="st">&quot;date&quot;</span>, <span class="st">&quot;week&quot;</span>, <span class="st">&quot;year&quot;</span>)</span>
+<span id="cb12-7"><a href="#cb12-7"></a>    ) <span class="op">%&gt;%</span></span>
+<span id="cb12-8"><a href="#cb12-8"></a><span class="st">    </span><span class="kw">snake_case</span>() <span class="op">%&gt;%</span></span>
+<span id="cb12-9"><a href="#cb12-9"></a><span class="st">    </span><span class="kw">character_dimensions</span>(<span class="dt">NA_replacement_value =</span> <span class="st">&quot;Unknown&quot;</span>,</span>
+<span id="cb12-10"><a href="#cb12-10"></a>                         <span class="dt">length_integers =</span> <span class="kw">list</span>(<span class="dt">week =</span> <span class="dv">2</span>)) <span class="op">%&gt;%</span></span>
+<span id="cb12-11"><a href="#cb12-11"></a><span class="st">    </span><span class="kw">modify_dimension_records</span>(updates)</span>
+<span id="cb12-12"><a href="#cb12-12"></a>}</span></code></pre></div>
+<p>We apply this function to new data sets, as shown below.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>st_mrs_age_w10 &lt;-</span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="st">  </span><span class="kw">mrs_age_definition</span>(mrs_age_w10, dm_mrs_age, updates_st_mrs_age)</span>
+<span id="cb13-3"><a href="#cb13-3"></a></span>
+<span id="cb13-4"><a href="#cb13-4"></a>st_mrs_age_w11 &lt;-</span>
+<span id="cb13-5"><a href="#cb13-5"></a><span class="st">  </span><span class="kw">mrs_age_definition</span>(mrs_age_w11, dm_mrs_age, updates_st_mrs_age)</span></code></pre></div>
+<p>Once we have the data in the same format, we can apply the incremental refresh to the original star schema, as follows.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>st_mrs_age &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a><span class="st">  </span><span class="kw">incremental_refresh_star_schema</span>(st_mrs_age_w10, <span class="dt">existing =</span> <span class="st">&quot;replace&quot;</span>) <span class="op">%&gt;%</span></span>
+<span id="cb14-3"><a href="#cb14-3"></a><span class="st">  </span><span class="kw">incremental_refresh_star_schema</span>(st_mrs_age_w11, <span class="dt">existing =</span> <span class="st">&quot;replace&quot;</span>)</span></code></pre></div>
+<p>In this case, it has been assumed that if data from previous periods appears among the new data, the new data has to replace the previous data (value “replace” in <code>existing</code> parameter).</p>
+<p>If the star schema has been integrated into a constellation, the incremental refresh can be performed on it, as follows.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a>ct_mrs &lt;-<span class="st"> </span>ct_mrs <span class="op">%&gt;%</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="st">  </span><span class="kw">incremental_refresh_constellation</span>(st_mrs_age_w10, <span class="dt">existing =</span> <span class="st">&quot;replace&quot;</span>) <span class="op">%&gt;%</span></span>
+<span id="cb15-3"><a href="#cb15-3"></a><span class="st">  </span><span class="kw">incremental_refresh_constellation</span>(st_mrs_age_w11, <span class="dt">existing =</span> <span class="st">&quot;replace&quot;</span>)</span></code></pre></div>
+<p>In this case, the corresponding star schema, the conformed dimensions and all the star schemas that share them are updated.</p>
+</div>
+<div id="data-according-to-cause-2" class="section level3">
+<h3>Data according to cause</h3>
+<p>Similar to how it has been done for age data, it can be done for cause data, as shown below.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a>mrs_cause_definition &lt;-<span class="st"> </span><span class="cf">function</span>(ft, dm, updates) {</span>
+<span id="cb16-2"><a href="#cb16-2"></a>  <span class="kw">star_schema</span>(ft, dm) <span class="op">%&gt;%</span></span>
+<span id="cb16-3"><a href="#cb16-3"></a><span class="st">    </span><span class="kw">snake_case</span>() <span class="op">%&gt;%</span></span>
+<span id="cb16-4"><a href="#cb16-4"></a><span class="st">    </span><span class="kw">character_dimensions</span>(</span>
+<span id="cb16-5"><a href="#cb16-5"></a>      <span class="dt">NA_replacement_value =</span> <span class="st">&quot;Unknown&quot;</span>,</span>
+<span id="cb16-6"><a href="#cb16-6"></a>      <span class="dt">length_integers =</span> <span class="kw">list</span>(</span>
+<span id="cb16-7"><a href="#cb16-7"></a>        <span class="dt">week =</span> <span class="dv">2</span>,</span>
+<span id="cb16-8"><a href="#cb16-8"></a>        <span class="dt">data_availability_week =</span> <span class="dv">2</span>,</span>
+<span id="cb16-9"><a href="#cb16-9"></a>        <span class="dt">reception_week =</span> <span class="dv">2</span></span>
+<span id="cb16-10"><a href="#cb16-10"></a>      )</span>
+<span id="cb16-11"><a href="#cb16-11"></a>    ) <span class="op">%&gt;%</span></span>
+<span id="cb16-12"><a href="#cb16-12"></a><span class="st">    </span><span class="kw">role_playing_dimension</span>(</span>
+<span id="cb16-13"><a href="#cb16-13"></a>      <span class="dt">dim_names =</span> <span class="kw">c</span>(<span class="st">&quot;when&quot;</span>, <span class="st">&quot;when_received&quot;</span>, <span class="st">&quot;when_available&quot;</span>),</span>
+<span id="cb16-14"><a href="#cb16-14"></a>      <span class="dt">name =</span> <span class="st">&quot;when_common&quot;</span>,</span>
+<span id="cb16-15"><a href="#cb16-15"></a>      <span class="dt">attributes =</span> <span class="kw">c</span>(<span class="st">&quot;date&quot;</span>, <span class="st">&quot;week&quot;</span>, <span class="st">&quot;year&quot;</span>)</span>
+<span id="cb16-16"><a href="#cb16-16"></a>    ) <span class="op">%&gt;%</span></span>
+<span id="cb16-17"><a href="#cb16-17"></a><span class="st">    </span><span class="kw">modify_dimension_records</span>(updates)</span>
+<span id="cb16-18"><a href="#cb16-18"></a>}</span>
+<span id="cb16-19"><a href="#cb16-19"></a></span>
+<span id="cb16-20"><a href="#cb16-20"></a>st_mrs_cause_w10 &lt;-</span>
+<span id="cb16-21"><a href="#cb16-21"></a><span class="st">  </span><span class="kw">mrs_cause_definition</span>(mrs_cause_w10, dm_mrs_cause, updates_st_mrs_age)</span>
+<span id="cb16-22"><a href="#cb16-22"></a></span>
+<span id="cb16-23"><a href="#cb16-23"></a>st_mrs_cause_w11 &lt;-</span>
+<span id="cb16-24"><a href="#cb16-24"></a><span class="st">  </span><span class="kw">mrs_cause_definition</span>(mrs_cause_w11, dm_mrs_cause, updates_st_mrs_age)</span>
+<span id="cb16-25"><a href="#cb16-25"></a></span>
+<span id="cb16-26"><a href="#cb16-26"></a>st_mrs_cause &lt;-<span class="st"> </span>st_mrs_cause <span class="op">%&gt;%</span></span>
+<span id="cb16-27"><a href="#cb16-27"></a><span class="st">  </span><span class="kw">incremental_refresh_star_schema</span>(st_mrs_cause_w10, <span class="dt">existing =</span> <span class="st">&quot;group&quot;</span>) <span class="op">%&gt;%</span></span>
+<span id="cb16-28"><a href="#cb16-28"></a><span class="st">  </span><span class="kw">incremental_refresh_star_schema</span>(st_mrs_cause_w11, <span class="dt">existing =</span> <span class="st">&quot;group&quot;</span>)</span>
+<span id="cb16-29"><a href="#cb16-29"></a></span>
+<span id="cb16-30"><a href="#cb16-30"></a>ct_mrs &lt;-<span class="st"> </span>ct_mrs <span class="op">%&gt;%</span></span>
+<span id="cb16-31"><a href="#cb16-31"></a><span class="st">  </span><span class="kw">incremental_refresh_constellation</span>(st_mrs_cause_w10, <span class="dt">existing =</span> <span class="st">&quot;group&quot;</span>) <span class="op">%&gt;%</span></span>
+<span id="cb16-32"><a href="#cb16-32"></a><span class="st">  </span><span class="kw">incremental_refresh_constellation</span>(st_mrs_cause_w11, <span class="dt">existing =</span> <span class="st">&quot;group&quot;</span>)</span></code></pre></div>
+<p>In this case, the previously existing data is treated differently than it was in the previous case, now what is done is grouping it using the aggregation functions, assuming it is additional data that has not been entered before (value “group” in <code>existing</code> parameter).</p>
+</div>
+</div>
+<div id="exporting-results" class="section level2">
+<h2>Exporting results</h2>
+<p>Once we have made the necessary definitions and transformations, we can export the data to work in a database or with a query tool.</p>
+<p>Instead of exporting data in the specific format of a particular tool, it is exported as <code>tibble</code>-based structures that can be easily handled.</p>
+<div id="star-schema" class="section level3">
+<h3>Star schema</h3>
+<p>Various export possibilities are offered. Specifically, for a star schema one of them is to export the data as a flat table. The main difference from the initial data is that we have cleaned and conformed it. This operation is offered for completeness. To work only with flat tables, this package is not suitable.</p>
+<p>To work with databases, it is useful to be able to export a star schema as a list of <code>tibble</code> with dimension and fact tables, as shown below.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a>tl &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb17-2"><a href="#cb17-2"></a><span class="st">  </span><span class="kw">star_schema_as_tibble_list</span>()</span></code></pre></div>
+<p>Optionally, the export function allows the role playing dimensions to be included.</p>
+</div>
+<div id="constellation" class="section level3">
+<h3>Constellation</h3>
+<p>To export constellation data, as well as a <code>tibble</code> list, the <code>multistar</code> format may be interesting, where you have a list of <code>tibble</code> for fact tables and another for dimension tables.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a>ms &lt;-<span class="st"> </span>ct_mrs <span class="op">%&gt;%</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a><span class="st">  </span><span class="kw">constellation_as_multistar</span>()</span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="transformation-operations" class="section level1">
+<h1>Transformation operations</h1>
+<p>Package <code>starschemar</code> offers operations to transform flat tables into star schemas.</p>
+<ol style="list-style-type: decimal">
+<li><p>From a flat table, we define a dimensional model classifying its attributes as facts or dimensions (<em>dimensional modelling</em>).</p></li>
+<li><p>From a flat table and a dimensional model we obtain a star schema that we can transform; from various star schemas we can define a constellation (<em>star schema and constellation definition</em>).</p></li>
+<li><p>Dimensions contain rows without duplicates, we can apply operations to perform data cleaning and to conform them (<em>cleaning and conforming data</em>).</p></li>
+<li><p>When new data is obtained, it is necessary to refresh the existing data with them by means of incremental refresh operations (<em>incremental refresh</em>).</p></li>
+<li><p>Finally, the results obtained can be exported to be consulted with other tools (<em>exporting results</em>).</p></li>
+</ol>
+<div id="dimensional-modelling-2" class="section level2">
+<h2>Dimensional modelling</h2>
+<p>Starting from a flat table, a dimensional model is defined specifying the attributes that make up each of the dimensions and the measurements in the facts. The result is a <code>dimensional_model</code> object. It is carried out through the following functions:</p>
+<ul>
+<li><code>dimensional_model()</code>: An empty <code>dimensional_model</code> object is created in which definition of facts and dimensions can be added. Example:</li>
+</ul>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a>dm &lt;-<span class="st"> </span><span class="kw">dimensional_model</span>()</span></code></pre></div>
+<ul>
+<li><code>define_dimension()</code>: To define a dimension in a <code>dimensional_model</code> object, we have to define its name and the set of attributes that make it up. Example:</li>
+</ul>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a>dm &lt;-<span class="st"> </span><span class="kw">dimensional_model</span>() <span class="op">%&gt;%</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a><span class="st">  </span><span class="kw">define_dimension</span>(<span class="dt">name =</span> <span class="st">&quot;When&quot;</span>,</span>
+<span id="cb20-3"><a href="#cb20-3"></a>                   <span class="dt">attributes =</span> <span class="kw">c</span>(<span class="st">&quot;Week Ending Date&quot;</span>,</span>
+<span id="cb20-4"><a href="#cb20-4"></a>                                  <span class="st">&quot;WEEK&quot;</span>,</span>
+<span id="cb20-5"><a href="#cb20-5"></a>                                  <span class="st">&quot;Year&quot;</span>))</span></code></pre></div>
+<ul>
+<li><code>define_fact()</code>: To define facts in a <code>dimensional_model</code> object, the essential data is a name and a set of measurements that can be empty (does not have explicit measurements). Associated with each measurement, an aggregation function is required, which by default is SUM. Examples:</li>
+</ul>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a>dm &lt;-<span class="st"> </span><span class="kw">dimensional_model</span>() <span class="op">%&gt;%</span></span>
+<span id="cb21-2"><a href="#cb21-2"></a><span class="st">  </span><span class="kw">define_fact</span>(</span>
+<span id="cb21-3"><a href="#cb21-3"></a>    <span class="dt">name =</span> <span class="st">&quot;mrs_age&quot;</span>,</span>
+<span id="cb21-4"><a href="#cb21-4"></a>    <span class="dt">measures =</span> <span class="kw">c</span>(<span class="st">&quot;Deaths&quot;</span>),</span>
+<span id="cb21-5"><a href="#cb21-5"></a>    <span class="dt">agg_functions =</span> <span class="kw">c</span>(<span class="st">&quot;SUM&quot;</span>),</span>
+<span id="cb21-6"><a href="#cb21-6"></a>    <span class="dt">nrow_agg =</span> <span class="st">&quot;nrow_agg&quot;</span></span>
+<span id="cb21-7"><a href="#cb21-7"></a>  )</span>
+<span id="cb21-8"><a href="#cb21-8"></a></span>
+<span id="cb21-9"><a href="#cb21-9"></a>dm &lt;-<span class="st"> </span><span class="kw">dimensional_model</span>() <span class="op">%&gt;%</span></span>
+<span id="cb21-10"><a href="#cb21-10"></a><span class="st">  </span><span class="kw">define_fact</span>(<span class="dt">name =</span> <span class="st">&quot;Factless fact&quot;</span>)</span></code></pre></div>
+</div>
+<div id="star-schema-and-constellation-definition-1" class="section level2">
+<h2>Star schema and constellation definition</h2>
+<p>A dimensional model is implemented using a star schema. We can have several related star schemas through common dimensions that together form a fact constellation.</p>
+<div id="star-schema-definition-1" class="section level3">
+<h3>Star schema definition</h3>
+<p>A star schema is defined from a flat table and a dimensional model definition. Once defined, a star schema can be transformed by defining role playing dimensions, changing the writing style of element names or the type of dimension attributes. These operations are carried out through the following functions:</p>
+<ul>
+<li><code>star_schema()</code>: Creates a <code>star_schema</code> object from a flat table (implemented by a <code>tibble</code>) and a <code>dimensional_model</code> object. Example:</li>
+</ul>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>st &lt;-<span class="st"> </span><span class="kw">star_schema</span>(mrs_age, dm_mrs_age)</span></code></pre></div>
+<ul>
+<li><code>role_playing_dimension()</code>: Given a list of <code>star_schema</code> dimension names, all with the same structure, a role playing dimension with the indicated name and attributes is generated. The original dimensions become role dimensions defined from the new role playing dimension. Example:</li>
+</ul>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a>st &lt;-<span class="st"> </span><span class="kw">star_schema</span>(mrs_age, dm_mrs_age) <span class="op">%&gt;%</span></span>
+<span id="cb23-2"><a href="#cb23-2"></a><span class="st">  </span><span class="kw">role_playing_dimension</span>(</span>
+<span id="cb23-3"><a href="#cb23-3"></a>    <span class="dt">dim_names =</span> <span class="kw">c</span>(<span class="st">&quot;when&quot;</span>, <span class="st">&quot;when_available&quot;</span>),</span>
+<span id="cb23-4"><a href="#cb23-4"></a>    <span class="dt">name =</span> <span class="st">&quot;When Common&quot;</span>,</span>
+<span id="cb23-5"><a href="#cb23-5"></a>    <span class="dt">attributes =</span> <span class="kw">c</span>(<span class="st">&quot;Date&quot;</span>, <span class="st">&quot;Week&quot;</span>, <span class="st">&quot;Year&quot;</span>)</span>
+<span id="cb23-6"><a href="#cb23-6"></a>  )</span></code></pre></div>
+<ul>
+<li><code>snake_case()</code>: Transform fact, dimension, measurement, and attribute names according to the snake case style. Example:</li>
+</ul>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a>st &lt;-<span class="st"> </span><span class="kw">star_schema</span>(mrs_age, dm_mrs_age) <span class="op">%&gt;%</span></span>
+<span id="cb24-2"><a href="#cb24-2"></a><span class="st">  </span><span class="kw">snake_case</span>()</span></code></pre></div>
+<ul>
+<li><code>character_dimensions()</code>: Transforms numeric type attributes of dimensions into character type. In a <code>star_schema</code> numerical data are measurements that are situated in the facts. Numerical data in dimensions are usually codes, day, week, month or year numbers. There are tools that consider any numerical data to be a measurement, for this reason it is appropriate to transform the numerical data of dimensions into character data. It also allows indicating the literal to be used in case the numerical value is not defined. Example:</li>
+</ul>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a>st &lt;-<span class="st"> </span><span class="kw">star_schema</span>(mrs_age, dm_mrs_age) <span class="op">%&gt;%</span></span>
+<span id="cb25-2"><a href="#cb25-2"></a><span class="st">  </span><span class="kw">character_dimensions</span>()</span></code></pre></div>
+</div>
+<div id="constellation-definition-1" class="section level3">
+<h3>Constellation definition</h3>
+<p>Based on various star schemas, a constellation can be defined in which star schemas share common dimensions. Dimensions with the same name must be shared. It is defined by the following function:</p>
+<ul>
+<li><code>constellation()</code>: Creates a <code>constellation</code> object from a list of <code>star_schema</code> objects. All dimensions with the same name in the star schemas have to be conformable. Example:</li>
+</ul>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a>ct &lt;-<span class="st"> </span><span class="kw">constellation</span>(<span class="kw">list</span>(st_mrs_age, st_mrs_cause), <span class="dt">name =</span> <span class="st">&quot;mrs&quot;</span>)</span></code></pre></div>
+</div>
+</div>
+<div id="cleaning-and-conforming-data-2" class="section level2">
+<h2>Cleaning and conforming data</h2>
+<p>Once star schemas and fact constellations are defined, data cleaning operations can be carried out on dimensions. There are three groups of functions:</p>
+<ol style="list-style-type: decimal">
+<li><p>One to obtain dimensions of star schemas and constellations.</p></li>
+<li><p>Another to define data cleaning operations over dimensions.</p></li>
+<li><p>One more to apply operations to star schemas or constellations.</p></li>
+</ol>
+<div id="obtaining-dimensions" class="section level3">
+<h3>Obtaining dimensions</h3>
+<p>We can obtain dimensions from a star schema or conformed dimensions from a fact constellation. Available functions in both cases are similar.</p>
+<div id="star-schema-1" class="section level4">
+<h4>Star schema</h4>
+<ul>
+<li><code>get_dimension_names()</code>: Get the names of the dimensions of a star schema. Role playing dimensions are not considered. Example:</li>
+</ul>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a>dn &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb27-2"><a href="#cb27-2"></a><span class="st">  </span><span class="kw">get_dimension_names</span>()</span></code></pre></div>
+<ul>
+<li><code>get_dimension()</code>: Get a dimension of a star schema given its name. Role dimensions can be obtained but not role playing dimensions. Example:</li>
+</ul>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a>where &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb28-2"><a href="#cb28-2"></a><span class="st">  </span><span class="kw">get_dimension</span>(<span class="st">&quot;where&quot;</span>)</span></code></pre></div>
+</div>
+<div id="constellation-1" class="section level4">
+<h4>Constellation</h4>
+<ul>
+<li><code>get_conformed_dimension_names()</code>: Get the names of the conformed dimensions of a constellation. Example:</li>
+</ul>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a>dn &lt;-<span class="st"> </span>ct_mrs <span class="op">%&gt;%</span></span>
+<span id="cb29-2"><a href="#cb29-2"></a><span class="st">  </span><span class="kw">get_conformed_dimension_names</span>()</span></code></pre></div>
+<ul>
+<li><code>get_conformed_dimension()</code>: Get a conformed dimension of a constellation given its name. Example:</li>
+</ul>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a>when &lt;-<span class="st"> </span>ct_mrs <span class="op">%&gt;%</span></span>
+<span id="cb30-2"><a href="#cb30-2"></a><span class="st">  </span><span class="kw">get_conformed_dimension</span>(<span class="st">&quot;when&quot;</span>)</span></code></pre></div>
+</div>
+</div>
+<div id="definition-of-updates-1" class="section level3">
+<h3>Definition of updates</h3>
+<p>Modifications are defined on dimension rows in various ways based exclusively on the values of the dimension fields. Although the surrogate key intervenes in the definition, the result, internally, does not depend on it so that it can be applied more generally in other star schemas.</p>
+<ul>
+<li><code>record_update_set()</code>: A <code>record_update_set</code> object is created. Stores updates on dimension records. Each update is made up of a dimension name, an old value set, and a new value set. Example:</li>
+</ul>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>updates &lt;-<span class="st"> </span><span class="kw">record_update_set</span>()</span></code></pre></div>
+<ul>
+<li><code>match_records()</code>: For a dimension, given the primary key of two records, it adds an update to the set of updates that modifies the combination of values of the rest of attributes of the first record so that they become the same as those of the second. Example:</li>
+</ul>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a>updates &lt;-<span class="st"> </span><span class="kw">record_update_set</span>() <span class="op">%&gt;%</span></span>
+<span id="cb32-2"><a href="#cb32-2"></a><span class="st">  </span><span class="kw">match_records</span>(<span class="dt">dimension =</span> where,</span>
+<span id="cb32-3"><a href="#cb32-3"></a>                <span class="dt">old =</span> <span class="dv">1</span>,</span>
+<span id="cb32-4"><a href="#cb32-4"></a>                <span class="dt">new =</span> <span class="dv">2</span>)</span></code></pre></div>
+<ul>
+<li><code>update_record()</code>: For a dimension, given the primary key of one record, it adds an update to the set of updates that modifies the combination of values of the rest of attributes of the selected record so that they become those given. Example:</li>
+</ul>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a>updates &lt;-<span class="st"> </span><span class="kw">record_update_set</span>() <span class="op">%&gt;%</span></span>
+<span id="cb33-2"><a href="#cb33-2"></a><span class="st">  </span><span class="kw">update_record</span>(</span>
+<span id="cb33-3"><a href="#cb33-3"></a>    <span class="dt">dimension =</span> where,</span>
+<span id="cb33-4"><a href="#cb33-4"></a>    <span class="dt">old =</span> <span class="dv">1</span>,</span>
+<span id="cb33-5"><a href="#cb33-5"></a>    <span class="dt">values =</span> <span class="kw">c</span>(<span class="st">&quot;1&quot;</span>, <span class="st">&quot;CT&quot;</span>, <span class="st">&quot;Bridgeport&quot;</span>)</span>
+<span id="cb33-6"><a href="#cb33-6"></a>  )</span></code></pre></div>
+<ul>
+<li><code>update_selection()</code>: For a dimension, given a vector of column names, a vector of old values and a vector of new values, it adds an update to the set of updates that modifies all the records that have the combination of old values in the columns with the new values in those same columns. Example:</li>
+</ul>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a>updates &lt;-<span class="st"> </span><span class="kw">record_update_set</span>() <span class="op">%&gt;%</span></span>
+<span id="cb34-2"><a href="#cb34-2"></a><span class="st">  </span><span class="kw">update_selection</span>(</span>
+<span id="cb34-3"><a href="#cb34-3"></a>    <span class="dt">dimension =</span> where,</span>
+<span id="cb34-4"><a href="#cb34-4"></a>    <span class="dt">columns =</span> <span class="kw">c</span>(<span class="st">&quot;city&quot;</span>),</span>
+<span id="cb34-5"><a href="#cb34-5"></a>    <span class="dt">old_values =</span> <span class="kw">c</span>(<span class="st">&quot;Bridgepor&quot;</span>),</span>
+<span id="cb34-6"><a href="#cb34-6"></a>    <span class="dt">new_values =</span> <span class="kw">c</span>(<span class="st">&quot;Bridgeport&quot;</span>)</span>
+<span id="cb34-7"><a href="#cb34-7"></a>  )</span></code></pre></div>
+<ul>
+<li><code>update_selection_general()</code>: For a dimension, given a vector of column names, a vector of old values for those columns, another vector column names, and a vector of new values for those columns, it adds an update to the set of updates that modifies all the records that have the combination of old values in the first column vector with the new values in the second column vector. Example:</li>
+</ul>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a>updates &lt;-<span class="st"> </span><span class="kw">record_update_set</span>() <span class="op">%&gt;%</span></span>
+<span id="cb35-2"><a href="#cb35-2"></a><span class="st">  </span><span class="kw">update_selection_general</span>(</span>
+<span id="cb35-3"><a href="#cb35-3"></a>    <span class="dt">dimension =</span> where,</span>
+<span id="cb35-4"><a href="#cb35-4"></a>    <span class="dt">columns_old =</span> <span class="kw">c</span>(<span class="st">&quot;state&quot;</span>, <span class="st">&quot;city&quot;</span>),</span>
+<span id="cb35-5"><a href="#cb35-5"></a>    <span class="dt">old_values =</span> <span class="kw">c</span>(<span class="st">&quot;CT&quot;</span>, <span class="st">&quot;Bridgepor&quot;</span>),</span>
+<span id="cb35-6"><a href="#cb35-6"></a>    <span class="dt">columns_new =</span> <span class="kw">c</span>(<span class="st">&quot;city&quot;</span>),</span>
+<span id="cb35-7"><a href="#cb35-7"></a>    <span class="dt">new_values =</span> <span class="kw">c</span>(<span class="st">&quot;Bridgeport&quot;</span>)</span>
+<span id="cb35-8"><a href="#cb35-8"></a>  )</span></code></pre></div>
+</div>
+<div id="updates-application-1" class="section level3">
+<h3>Updates application</h3>
+<p>Defined updates can be applied on a star schema or on the conformed dimension of a fact constellation.</p>
+<div id="star-schema-2" class="section level4">
+<h4>Star schema</h4>
+<ul>
+<li><code>modify_dimension_records()</code>: Given a list of dimension record update operations, they are applied on the dimensions of the <code>star_schema</code> object. Update operations must be defined with the set of functions available for that purpose. Example:</li>
+</ul>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a>st &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb36-2"><a href="#cb36-2"></a><span class="st">  </span><span class="kw">modify_dimension_records</span>(updates_st_mrs_age)</span></code></pre></div>
+</div>
+<div id="constellation-2" class="section level4">
+<h4>Constellation</h4>
+<ul>
+<li><code>modify_conformed_dimension_records()</code>: Given a list of dimension record update operations, they are applied on the conformed dimensions of the <code>constellation</code> object. Update operations must be defined with the set of functions available for that purpose. Example:</li>
+</ul>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1"></a>ct &lt;-<span class="st"> </span>ct_mrs <span class="op">%&gt;%</span></span>
+<span id="cb37-2"><a href="#cb37-2"></a><span class="st">  </span><span class="kw">modify_conformed_dimension_records</span>(updates_st_mrs_age)</span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="incremental-refresh-2" class="section level2">
+<h2>Incremental refresh</h2>
+<p>When new data is obtained, an incremental refresh of the data can be carried out, both of the dimensions and of the facts. Incremental refresh can be applied to both star schema and fact constellation, using the following functions.</p>
+<div id="star-schema-3" class="section level4">
+<h4>Star schema</h4>
+<ul>
+<li><code>incremental_refresh_star_schema()</code>: Incrementally refresh a star schema with the content of a new one that is integrated into the first. Once the dimensions are integrated, if there are records in the fact table whose keys match the new ones, new ones can be ignored, they can be replaced by new ones, all of them can be grouped using the aggregation functions, or they can be deleted. Therefore, the possible values of the <code>existing</code> parameter are: “ignore”, “replace”, “group” or “delete”. Example:</li>
+</ul>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1"></a>st &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb38-2"><a href="#cb38-2"></a><span class="st">  </span><span class="kw">incremental_refresh_star_schema</span>(st_mrs_age_w10, <span class="dt">existing =</span> <span class="st">&quot;replace&quot;</span>)</span></code></pre></div>
+</div>
+<div id="constellation-3" class="section level4">
+<h4>Constellation</h4>
+<ul>
+<li><code>incremental_refresh_constellation()</code>: Incrementally refresh a star schema in a constellation with the content of a new star schema that is integrated into the first. Example:</li>
+</ul>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1"></a>ct &lt;-<span class="st"> </span>ct_mrs <span class="op">%&gt;%</span></span>
+<span id="cb39-2"><a href="#cb39-2"></a><span class="st">  </span><span class="kw">incremental_refresh_constellation</span>(st_mrs_age_w10, <span class="dt">existing =</span> <span class="st">&quot;replace&quot;</span>)</span></code></pre></div>
+</div>
+</div>
+<div id="exporting-results-1" class="section level2">
+<h2>Exporting results</h2>
+<p>Once the data has been properly structured and transformed, it can be exported to be consulted with other tools. Various export formats have been defined, both for star schemas and for constellations, using the following functions.</p>
+<div id="star-schema-4" class="section level3">
+<h3>Star schema</h3>
+<ul>
+<li><code>star_schema_as_flat_table()</code>: We can again obtain a flat table, implemented using a <code>tibble</code>, from a star schema. Example:</li>
+</ul>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1"></a>ft &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb40-2"><a href="#cb40-2"></a><span class="st">  </span><span class="kw">star_schema_as_flat_table</span>()</span></code></pre></div>
+<ul>
+<li><code>star_schema_as_multistar()</code>: We can obtain a <code>multistar</code>. A <code>multistar</code> only distinguishes between general and conformed dimensions, each dimension has its own data. It can contain multiple fact tables. Example:</li>
+</ul>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1"></a>ms &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb41-2"><a href="#cb41-2"></a><span class="st">  </span><span class="kw">star_schema_as_multistar</span>()</span></code></pre></div>
+<ul>
+<li><code>star_schema_as_tibble_list()</code>: We can obtain a <code>tibble</code> list with them. Role playing dimensions can be optionally included. Example:</li>
+</ul>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1"></a>tl &lt;-<span class="st"> </span>st_mrs_age <span class="op">%&gt;%</span></span>
+<span id="cb42-2"><a href="#cb42-2"></a><span class="st">  </span><span class="kw">star_schema_as_tibble_list</span>(<span class="dt">include_role_playing =</span> <span class="ot">TRUE</span>)</span></code></pre></div>
+</div>
+<div id="constellation-4" class="section level3">
+<h3>Constellation</h3>
+<ul>
+<li><code>constellation_as_multistar()</code>: We can obtain a <code>multistar</code>. A <code>multistar</code> only distinguishes between general and conformed dimensions, each dimension has its own data. It can contain multiple fact tables. Example:</li>
+</ul>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1"></a>ms &lt;-<span class="st"> </span>ct_mrs <span class="op">%&gt;%</span></span>
+<span id="cb43-2"><a href="#cb43-2"></a><span class="st">  </span><span class="kw">constellation_as_multistar</span>()</span></code></pre></div>
+<ul>
+<li><code>constellation_as_tibble_list()</code>: We can obtain a <code>tibble</code> list with them. Role playing dimensions can be optionally included. Example:</li>
+</ul>
+<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1"></a>tl &lt;-<span class="st"> </span>ct_mrs <span class="op">%&gt;%</span></span>
+<span id="cb44-2"><a href="#cb44-2"></a><span class="st">  </span><span class="kw">constellation_as_tibble_list</span>(<span class="dt">include_role_playing =</span> <span class="ot">TRUE</span>)</span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="conclusions" class="section level1">
+<h1>Conclusions</h1>
+<p><code>starschemar</code> package offers a set of operations that allow us to transform flat tables into star schemas. Star schemas support the definition of role playing and role dimensions. Additional transformation operations can be applied to each star schema to adapt the format of the data. From several star schemas you can define fact constellation with conformed dimensions.</p>
+<p>Cleaning and conforming data operations can be defined on the star schemas and fact constellation. To update the data, incremental refresh operations are offered, also applicable on said structures. In addition, there are several possibilities to export the results obtained in the form of easily treatable <code>tibble</code>-based structures.</p>
+<p>Operations have been designed to be intuitive and easy to use. The result greatly facilitates the data transformation process for the exposed situation.</p>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references">
+<div id="ref-adamson2010star">
+<p>Adamson, Christopher. 2010. <em>Star Schema: The Complete Reference</em>. McGraw Hill Professional.</p>
+</div>
+<div id="ref-jensen2010multi">
+<p>Jensen, Christian S., Torben Bach Pedersen, and Christian Thomsen. 2010. <em>Multidimensional Databases and Data Warehousing</em>. Morgan &amp; Claypool Publishers.</p>
+</div>
+<div id="ref-kimball2013data">
+<p>Kimball, Ralph, and Margy Ross. 2013. <em>The Data Warehouse Toolkit: The Definitive Guide to Dimensional Modeling</em>. John Wiley &amp; Sons.</p>
+</div>
+</div>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>I know this data set thanks to Alberto J. Duran, student of <em>Multidimensional Systems</em> during the 2019-2020 academic year, a subject I teach at the University of Granada (Spain), for a work he developed based on it, tutored by me.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>The transformation has been carried out with <a href="https://CRAN.R-project.org/package=tidyverse"><code>tidyverse</code></a> and <a href="https://CRAN.R-project.org/package=flattabler"><code>flattabler</code></a> packages.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p><code>SaveRDS</code> and <code>readRDS</code> functions can be used to save and retrieve star schemas or any other defined data structure.<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
