@@ -11,11 +11,14 @@ Transformations that allow obtaining star schemas from flat tables.
 From flat tables star schemas can be defined that can form constellations
 (\emph{star schema and constellation definition functions}). Dimensions contain
 data without duplicates, operations to do data cleaning can be applied on
-them (\emph{data cleaning functions}). When new data is obtained, it is necessary
-to refresh the existing data with them by means of incremental refresh
-operations (\emph{incremental refresh functions}). Finally, the results obtained
-can be exported to be consulted with other tools (\emph{results export
-functions}).
+them (\emph{data cleaning functions}). Dimensions can be enriched by adding
+additional columns, sometimes using functions, others explicitly defined by
+the user (\emph{dimension enrichment functions}). When new data is obtained, it is
+necessary to refresh the existing data with them by means of incremental
+refresh operations or delete data that is no longer necessary (\emph{incremental
+refresh functions}). Finally, the results obtained can be exported to be
+consulted with other tools (\emph{results export functions}) or through the
+defined query functions (\emph{query functions}).
 }
 \section{Star schema and constellation definition}{
  Starting from a flat
@@ -39,6 +42,20 @@ following \emph{star schema definition and transformation functions}:
 \item \code{\link[=role_playing_dimension]{role_playing_dimension()}}
 \item \code{\link[=snake_case]{snake_case()}}
 \item \code{\link[=character_dimensions]{character_dimensions()}}
+}
+
+Once a star schema is defined, we can rename its elements. It is necessary to
+be able to rename attributes of dimensions and measures of facts because the
+definition operations only allowed us to select columns of a flat table. For
+completeness also dimensions and facts can be renamed. To carry out these
+operations, the following \emph{star schema rename functions} are available:
+\itemize{
+\item \code{\link[=rename_dimension]{rename_dimension()}}
+\item \code{\link[=get_dimension_attribute_names]{get_dimension_attribute_names()}}
+\item \code{\link[=rename_dimension_attributes]{rename_dimension_attributes()}}
+\item \code{\link[=rename_fact]{rename_fact()}}
+\item \code{\link[=get_measure_names]{get_measure_names()}}
+\item \code{\link[=rename_measures]{rename_measures()}}
 }
 
 Based on various star schemas, a constellation can be defined in which star
@@ -80,6 +97,17 @@ and one more to apply operations to star schemas or constellations.
 }
 }
 
+\section{Dimension enrichment}{
+ To enrich a dimension with new attributes
+related to others already included in it, first, we export the attributes
+on which the new ones depend, then we define the new attributes, and import
+the table with all the attributes to be added to the dimension.
+\itemize{
+\item \code{\link[=enrich_dimension_export]{enrich_dimension_export()}}
+\item \code{\link[=enrich_dimension_import]{enrich_dimension_import()}}
+}
+}
+
 \section{Incremental refresh}{
  When new data is obtained, an incremental
 refresh of the data can be carried out, both of the dimensions and of the
@@ -89,12 +117,28 @@ constellation, using the following functions:
 \item \code{\link[=incremental_refresh_star_schema]{incremental_refresh_star_schema()}}
 \item \code{\link[=incremental_refresh_constellation]{incremental_refresh_constellation()}}
 }
+
+Sometimes the data refresh consists of eliminating data that is no longer
+necessary, generally because it corresponds to a period that has stopped
+being analysed but it can also be for other reasons. This data can be
+selected using the following function:
+\itemize{
+\item \code{\link[=filter_fact_rows]{filter_fact_rows()}}
+}
+
+Once the fact data is removed (using the other incremental refresh
+functions), we can remove the data for the dimensions that are no longer
+needed using the following functions:
+\itemize{
+\item \code{\link[=purge_dimensions_star_schema]{purge_dimensions_star_schema()}}
+\item \code{\link[=purge_dimensions_constellation]{purge_dimensions_constellation()}}
+}
 }
 
 \section{Results export}{
  Once the data has been properly structured and
-transformed, it can be exported to be consulted with other tools. Various
-export formats have been defined, both for star schemas and for
+transformed, it can be exported to be consulted with other tools or with R.
+Various export formats have been defined, both for star schemas and for
 constellations, using the following functions:
 \itemize{
 \item \code{\link[=star_schema_as_flat_table]{star_schema_as_flat_table()}}
@@ -102,6 +146,21 @@ constellations, using the following functions:
 \item \code{\link[=star_schema_as_tibble_list]{star_schema_as_tibble_list()}}
 \item \code{\link[=constellation_as_multistar]{constellation_as_multistar()}}
 \item \code{\link[=constellation_as_tibble_list]{constellation_as_tibble_list()}}
+\item \code{\link[=multistar_as_flat_table]{multistar_as_flat_table()}}
+}
+}
+
+\section{Query functions}{
+ There are many multidimensional query tools
+available. The exported data, once stored in files, can be used directly
+from them. Using the following functions, you can also perform basic
+queries from R on data in the \code{multistar} format:
+\itemize{
+\item \code{\link[=dimensional_query]{dimensional_query()}}
+\item \code{\link[=select_fact]{select_fact()}}
+\item \code{\link[=select_dimension]{select_dimension()}}
+\item \code{\link[=filter_dimension]{filter_dimension()}}
+\item \code{\link[=run_query]{run_query()}}
 }
 }
 

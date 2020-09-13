@@ -168,6 +168,62 @@ pander::pandoc.table(head(st_mrs_cause$dimension$when_common), split.table = Inf
 pander::pandoc.table(head(st_mrs_cause$fact$mrs_cause), split.table = Inf)
 
 ## -----------------------------------------------------------------------------
+st_mrs_age <-
+  st_mrs_age %>% rename_dimension_attributes(
+    name = "when",
+    attributes = c("week_ending_date", "week", "year"),
+    new_names = c(
+      "when_happened_date",
+      "when_happened_week",
+      "when_happened_year"
+    )
+  )
+
+## -----------------------------------------------------------------------------
+st_mrs_cause <-
+  st_mrs_cause %>% rename_dimension_attributes(
+    name = "when",
+    attributes = c("week_ending_date", "week", "year"),
+    new_names = c(
+      "when_happened_date",
+      "when_happened_week",
+      "when_happened_year"
+    )
+  )
+
+## -----------------------------------------------------------------------------
+st_mrs_age <-
+  st_mrs_age %>% rename_measures(measures = c("deaths"),
+                                 new_names = c("n_deaths"))
+
+## -----------------------------------------------------------------------------
+tb <-
+  enrich_dimension_export(st_mrs_age,
+                          name = "who",
+                          attributes = c("age_range"))
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(tb, split.table = Inf)
+
+## -----------------------------------------------------------------------------
+v <-
+  c("0-24 years", "0-24 years", "25+ years", "25+ years", "25+ years")
+tb <-
+  tibble::add_column(tb,
+                     wide_age_range = v)
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(tb, split.table = Inf)
+
+## -----------------------------------------------------------------------------
+st_mrs_age <-
+  st_mrs_age %>%
+  enrich_dimension_import(name = "who", tb)
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(st_mrs_age$dimension$who, split.table = Inf)
+
+## -----------------------------------------------------------------------------
 ct_mrs <- constellation(list(st_mrs_age, st_mrs_cause), name = "mrs")
 
 ## ---- results = "asis", echo = FALSE------------------------------------------
@@ -276,6 +332,18 @@ mrs_age_definition <- function(ft, dm, updates) {
     snake_case() %>%
     character_dimensions(NA_replacement_value = "Unknown",
                          length_integers = list(week = 2)) %>%
+    rename_dimension_attributes(
+      name = "when",
+      attributes = c("week_ending_date", "week", "year"),
+      new_names = c(
+        "when_happened_date",
+        "when_happened_week",
+        "when_happened_year"
+      )
+    ) %>%
+    rename_measures(measures = c("deaths"),
+                    new_names = c("n_deaths")) %>%
+    enrich_dimension_import(name = "who", tb) %>%
     modify_dimension_records(updates)
 }
 
@@ -313,6 +381,15 @@ mrs_cause_definition <- function(ft, dm, updates) {
       name = "when_common",
       attributes = c("date", "week", "year")
     ) %>%
+    rename_dimension_attributes(
+      name = "when",
+      attributes = c("week_ending_date", "week", "year"),
+      new_names = c(
+        "when_happened_date",
+        "when_happened_week",
+        "when_happened_year"
+      )
+    ) %>%
     modify_dimension_records(updates)
 }
 
@@ -331,12 +408,68 @@ ct_mrs <- ct_mrs %>%
   incremental_refresh_constellation(st_mrs_cause_w11, existing = "group")
 
 ## -----------------------------------------------------------------------------
+st1 <- ct_mrs$star$mrs_age %>%
+  filter_fact_rows(name = "where", city == "Boston")
+
+st2 <- ct_mrs$star$mrs_cause %>%
+  filter_fact_rows(name = "where", city == "Boston")
+
+## -----------------------------------------------------------------------------
+ct_mrs <- ct_mrs %>%
+  incremental_refresh_constellation(st1, existing = "delete") %>%
+  incremental_refresh_constellation(st2, existing = "delete")
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(head(ct_mrs$dimension$where), split.table = Inf)
+
+## -----------------------------------------------------------------------------
+ct_mrs <- ct_mrs %>%
+  purge_dimensions_constellation()
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(head(ct_mrs$dimension$where), split.table = Inf)
+
+## -----------------------------------------------------------------------------
 tl <- st_mrs_age %>%
   star_schema_as_tibble_list()
 
 ## -----------------------------------------------------------------------------
 ms <- ct_mrs %>%
   constellation_as_multistar()
+
+## -----------------------------------------------------------------------------
+ft <- ms %>%
+  multistar_as_flat_table(name = "mrs_age")
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(head(ft), split.table = Inf)
+
+## -----------------------------------------------------------------------------
+ms_mrs <- ct_mrs %>%
+  constellation_as_multistar()
+
+## -----------------------------------------------------------------------------
+ms <- dimensional_query(ms_mrs) %>%
+  select_dimension(name = "where",
+                   attributes = c("city", "state")) %>%
+  select_dimension(name = "when",
+                   attributes = c("when_happened_year")) %>%
+  select_fact(name = "mrs_age",
+              measures = c("n_deaths")) %>%
+  select_fact(
+    name = "mrs_cause",
+    measures = c("pneumonia_and_influenza_deaths", "other_deaths")
+  ) %>%
+  filter_dimension(name = "when", when_happened_week <= "03") %>%
+  filter_dimension(name = "where", city == "Bridgeport") %>%
+  run_query()
+
+## -----------------------------------------------------------------------------
+ft <- ms %>%
+  multistar_as_flat_table()
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(head(ft), split.table = Inf)
 
 ## -----------------------------------------------------------------------------
 dm <- dimensional_model()
@@ -378,6 +511,34 @@ st <- star_schema(mrs_age, dm_mrs_age) %>%
 ## -----------------------------------------------------------------------------
 st <- star_schema(mrs_age, dm_mrs_age) %>%
   character_dimensions()
+
+## -----------------------------------------------------------------------------
+st <- st_mrs_age %>%
+  rename_dimension(name = "when", new_name = "when_happened")
+
+## -----------------------------------------------------------------------------
+attribute_names <- 
+  st_mrs_age %>% get_dimension_attribute_names("when")
+
+## -----------------------------------------------------------------------------
+st <-
+  st_mrs_age %>% rename_dimension_attributes(
+    name = "when",
+    attributes = c("when_happened_week", "when_happened_year"),
+    new_names = c("week", "year")
+  )
+
+## -----------------------------------------------------------------------------
+st <- st_mrs_age %>% rename_fact("age") 
+
+## -----------------------------------------------------------------------------
+measure_names <- 
+  st_mrs_age %>% get_measure_names()
+
+## -----------------------------------------------------------------------------
+st <-
+  st_mrs_age %>% rename_measures(measures = c("n_deaths"),
+                                 new_names = c("num_deaths"))
 
 ## -----------------------------------------------------------------------------
 ct <- constellation(list(st_mrs_age, st_mrs_cause), name = "mrs")
@@ -443,12 +604,46 @@ ct <- ct_mrs %>%
   modify_conformed_dimension_records(updates_st_mrs_age)
 
 ## -----------------------------------------------------------------------------
+tb <-
+  enrich_dimension_export(st_mrs_age,
+                          name = "when_common",
+                          attributes = c("week", "year"))
+
+## -----------------------------------------------------------------------------
+tb <-
+  enrich_dimension_export(st_mrs_age,
+                          name = "when_common",
+                          attributes = c("week", "year"))
+
+# Add new columns with meaningful data (these are not), possibly exporting
+# data to a file, populating it and importing it.
+tb <- tibble::add_column(tb, x = "x", y = "y", z = "z")
+
+st <- enrich_dimension_import(st_mrs_age, name = "when_common", tb)
+
+## -----------------------------------------------------------------------------
 st <- st_mrs_age %>%
   incremental_refresh_star_schema(st_mrs_age_w10, existing = "replace")
 
 ## -----------------------------------------------------------------------------
+st <- st_mrs_age %>%
+  filter_fact_rows(name = "when", when_happened_week <= "03") %>%
+  filter_fact_rows(name = "where", city == "Bridgeport")
+
+st2 <- st_mrs_age %>%
+  incremental_refresh_star_schema(st, existing = "delete")
+
+## -----------------------------------------------------------------------------
+st3 <- st2 %>%
+  purge_dimensions_star_schema()
+
+## -----------------------------------------------------------------------------
 ct <- ct_mrs %>%
   incremental_refresh_constellation(st_mrs_age_w10, existing = "replace")
+
+## -----------------------------------------------------------------------------
+ct <- ct_mrs %>%
+  purge_dimensions_constellation()
 
 ## -----------------------------------------------------------------------------
 ft <- st_mrs_age %>%
@@ -469,4 +664,58 @@ ms <- ct_mrs %>%
 ## -----------------------------------------------------------------------------
 tl <- ct_mrs %>%
   constellation_as_tibble_list(include_role_playing = TRUE)
+
+## -----------------------------------------------------------------------------
+ft <- ms_mrs %>%
+  multistar_as_flat_table(name = "mrs_age")
+
+## -----------------------------------------------------------------------------
+ms_mrs <- ct_mrs %>%
+  constellation_as_multistar()
+
+dq <- dimensional_query(ms_mrs)
+
+## -----------------------------------------------------------------------------
+dq <- dimensional_query(ms_mrs) %>%
+  select_fact(
+    name = "mrs_age",
+    measures = c("n_deaths"),
+    agg_functions = c("MAX")
+  )
+
+dq <- dimensional_query(ms_mrs) %>%
+  select_fact(name = "mrs_age",
+              measures = c("n_deaths"))
+
+dq <- dimensional_query(ms_mrs) %>%
+  select_fact(name = "mrs_age")
+
+## -----------------------------------------------------------------------------
+dq <- dimensional_query(ms_mrs) %>%
+  select_dimension(name = "where",
+                   attributes = c("city", "state")) %>%
+  select_dimension(name = "when")
+
+## -----------------------------------------------------------------------------
+dq <- dimensional_query(ms_mrs) %>%
+  filter_dimension(name = "when", when_happened_week <= "03") %>%
+  filter_dimension(name = "where", city == "Boston")
+
+## -----------------------------------------------------------------------------
+ms <- dimensional_query(ms_mrs) %>%
+  select_dimension(name = "where",
+                   attributes = c("city", "state")) %>%
+  select_dimension(name = "when",
+                   attributes = c("when_happened_year")) %>%
+  select_fact(
+    name = "mrs_age",
+    measures = c("n_deaths")
+  ) %>%
+  select_fact(
+    name = "mrs_cause",
+    measures = c("pneumonia_and_influenza_deaths", "other_deaths")
+  ) %>%
+  filter_dimension(name = "when", when_happened_week <= "03") %>%
+  filter_dimension(name = "where", city == "Boston") %>%
+  run_query()
 

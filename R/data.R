@@ -739,3 +739,51 @@
 #' @format A `record_update_set` object.
 "updates_st_mrs_age_test"
 
+#' Multistar for Mortality Reporting System
+#'
+#' Multistar for the Mortality Reporting System considering age and cause
+#' classification.
+#'
+#' @examples
+#' # Defined by:
+#'
+#' library(tidyr)
+#'
+#' ms_mrs <- ct_mrs %>%
+#'   constellation_as_multistar()
+#'
+#' @format A `constellation` object.
+"ms_mrs"
+
+#' Multistar for Mortality Reporting System Test
+#'
+#' Multistar for the Mortality Reporting System considering age and cause
+#' classification data test.
+#'
+#' @examples
+#' # Defined by:
+#'
+#' library(tidyr)
+#'
+#' ms_mrs_test <- ct_mrs_test %>%
+#'   constellation_as_multistar()
+#'
+#' @format A `constellation` object.
+"ms_mrs_test"
+
+
+#' Modelling the long-term health impacts of air pollution in London
+#'
+#' Estimation of the long-term health impacts of exposure to air pollution in
+#' London from 2016 to 2050.
+#'
+#' The original dataset contains 68 files, corresponding to 34 London areas and
+#' 2 pollutants: pollutant and zone are indicated in the name of each file. Each
+#' file has several sheets with different variables. It has been transformed
+#' into a flat table considering a single variable and defining the area and the
+#' pollutant as columns.
+#'
+#' @format A `tibble`.
+#' @source
+#'   \url{https://data.world/datagov-uk/fd864906-8456-46a8-9a01-0dcb2dbd87b9}
+"ft_datagov_uk"
