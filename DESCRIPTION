@@ -1,6 +1,6 @@
 Package: starschemar
 Title: Obtaining Star Schemas from Flat Tables
-Version: 1.1.0
+Version: 1.2.0
 Authors@R: 
     person(given = "Jose",
            family = "Samos",
@@ -30,8 +30,8 @@ Suggests: testthat, knitr, rmarkdown
 VignetteBuilder: knitr
 Depends: R (>= 2.10)
 NeedsCompilation: no
-Packaged: 2020-09-13 15:36:37 UTC; jsamos
+Packaged: 2020-09-25 20:56:52 UTC; jsamos
 Author: Jose Samos [aut, cre, cph] (<https://orcid.org/0000-0002-4457-3439>)
 Maintainer: Jose Samos <jsamos@ugr.es>
 Repository: CRAN
-Date/Publication: 2020-09-13 16:50:03 UTC
+Date/Publication: 2020-09-25 21:30:02 UTC

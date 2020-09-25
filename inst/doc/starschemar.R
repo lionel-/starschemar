@@ -177,6 +177,11 @@ st_mrs_age <-
       "when_happened_week",
       "when_happened_year"
     )
+  ) %>%
+  rename_dimension_attributes(
+    name = "where",
+    attributes = c("region"),
+    new_names = c("division")
   )
 
 ## -----------------------------------------------------------------------------
@@ -189,47 +194,17 @@ st_mrs_cause <-
       "when_happened_week",
       "when_happened_year"
     )
+  ) %>%
+  rename_dimension_attributes(
+    name = "where",
+    attributes = c("region"),
+    new_names = c("division")
   )
 
 ## -----------------------------------------------------------------------------
 st_mrs_age <-
   st_mrs_age %>% rename_measures(measures = c("deaths"),
                                  new_names = c("n_deaths"))
-
-## -----------------------------------------------------------------------------
-tb <-
-  enrich_dimension_export(st_mrs_age,
-                          name = "who",
-                          attributes = c("age_range"))
-
-## ---- results = "asis", echo = FALSE------------------------------------------
-pander::pandoc.table(tb, split.table = Inf)
-
-## -----------------------------------------------------------------------------
-v <-
-  c("0-24 years", "0-24 years", "25+ years", "25+ years", "25+ years")
-tb <-
-  tibble::add_column(tb,
-                     wide_age_range = v)
-
-## ---- results = "asis", echo = FALSE------------------------------------------
-pander::pandoc.table(tb, split.table = Inf)
-
-## -----------------------------------------------------------------------------
-st_mrs_age <-
-  st_mrs_age %>%
-  enrich_dimension_import(name = "who", tb)
-
-## ---- results = "asis", echo = FALSE------------------------------------------
-pander::pandoc.table(st_mrs_age$dimension$who, split.table = Inf)
-
-## -----------------------------------------------------------------------------
-ct_mrs <- constellation(list(st_mrs_age, st_mrs_cause), name = "mrs")
-
-## ---- results = "asis", echo = FALSE------------------------------------------
-pander::pandoc.table(head(ct_mrs$dimension$when), split.table = Inf)
-pander::pandoc.table(head(ct_mrs$dimension$when_available), split.table = Inf)
-pander::pandoc.table(head(ct_mrs$dimension$where), split.table = Inf)
 
 ## -----------------------------------------------------------------------------
 dim_names <- st_mrs_age %>%
@@ -239,6 +214,7 @@ where <- st_mrs_age %>%
   get_dimension("where")
 
 # View(where)
+# where[where$where_key %in% c(1, 2, 62), ]
 
 when <- st_mrs_age %>%
   get_dimension("when")
@@ -252,17 +228,29 @@ who <- st_mrs_age %>%
 # View(who)
 
 ## ---- results = "asis", echo = FALSE------------------------------------------
-pander::pandoc.table(when[when$when_key %in% c(36, 37, 73), ], split.table = Inf)
+pander::pandoc.table(where[where$where_key %in% c(1, 2, 62), ], split.table = Inf)
 
 ## -----------------------------------------------------------------------------
 updates_st_mrs_age <- record_update_set() %>%
+  match_records(dimension = where,
+                old = 1,
+                new = 2) 
+
+## -----------------------------------------------------------------------------
+updates_st_mrs_age <- updates_st_mrs_age %>%
   update_selection_general(
     dimension = where,
     columns_old = c("state", "city"),
-    old_values = c("CT", "Bridgepor"),
+    old_values = c("DE", "Wilimington"),
     columns_new = c("city"),
-    new_values = c("Bridgeport")
-  ) %>%
+    new_values = c("Wilmington")
+  ) 
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(when[when$when_key %in% c(36, 37, 73), ], split.table = Inf)
+
+## -----------------------------------------------------------------------------
+updates_st_mrs_age <- updates_st_mrs_age %>%
   match_records(dimension = when,
                 old = 37,
                 new = 36) %>%
@@ -270,7 +258,10 @@ updates_st_mrs_age <- record_update_set() %>%
     dimension = when,
     old = 73,
     values = c("1962-02-17", "07", "1962")
-  ) %>%
+  )
+
+## -----------------------------------------------------------------------------
+updates_st_mrs_age <- updates_st_mrs_age %>%
   update_selection(
     dimension = who,
     columns = c("age_range"),
@@ -318,41 +309,195 @@ pander::pandoc.table(head(st_mrs_age$fact$mrs_age), split.table = Inf)
 st_mrs_cause <- st_mrs_cause %>%
   modify_dimension_records(updates_st_mrs_age)
 
-ct_mrs <- ct_mrs %>%
-  modify_conformed_dimension_records(updates_st_mrs_age)
+## -----------------------------------------------------------------------------
+tb_who <-
+  enrich_dimension_export(st_mrs_age,
+                          name = "who",
+                          attributes = c("age_range"))
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(tb_who, split.table = Inf)
 
 ## -----------------------------------------------------------------------------
-mrs_age_definition <- function(ft, dm, updates) {
-  star_schema(ft, dm) %>%
-    role_playing_dimension(
-      dim_names = c("when", "when_available"),
-      name = "When Common",
-      attributes = c("date", "week", "year")
-    ) %>%
-    snake_case() %>%
-    character_dimensions(NA_replacement_value = "Unknown",
-                         length_integers = list(week = 2)) %>%
-    rename_dimension_attributes(
-      name = "when",
-      attributes = c("week_ending_date", "week", "year"),
-      new_names = c(
-        "when_happened_date",
-        "when_happened_week",
-        "when_happened_year"
-      )
-    ) %>%
-    rename_measures(measures = c("deaths"),
-                    new_names = c("n_deaths")) %>%
-    enrich_dimension_import(name = "who", tb) %>%
-    modify_dimension_records(updates)
-}
+v <-
+  c("0-24 years", "0-24 years", "25+ years", "25+ years", "25+ years")
+tb_who <-
+  tibble::add_column(tb_who,
+                     wide_age_range = v)
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(tb_who, split.table = Inf)
+
+## -----------------------------------------------------------------------------
+st_mrs_age <-
+  st_mrs_age %>%
+  enrich_dimension_import(name = "who", tb_who)
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(st_mrs_age$dimension$who, split.table = Inf)
+
+## -----------------------------------------------------------------------------
+tb_where <-
+  enrich_dimension_export(st_mrs_age,
+                          name = "where",
+                          attributes = c("division"))
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(tb_where, split.table = Inf)
+
+## -----------------------------------------------------------------------------
+tb_where <-
+  tibble::add_column(
+    tb_where,
+    division_name = c(
+      "New England",
+      "Middle Atlantic",
+      "East North Central",
+      "West North Central",
+      "South Atlantic",
+      "East South Central",
+      "West South Central",
+      "Mountain",
+      "Pacific"
+    ),
+    region = c('1',
+               '1',
+               '2',
+               '2',
+               '3',
+               '3',
+               '3',
+               '4',
+               '4'),
+    region_name = c(
+      "Northeast",
+      "Northeast",
+      "Midwest",
+      "Midwest",
+      "South",
+      "South",
+      "South",
+      "West",
+      "West"
+    )
+  )
+
+st_mrs_age <-
+  st_mrs_age %>%
+  enrich_dimension_import(name = "where", tb_where)
+
+st_mrs_cause <-
+  st_mrs_cause %>%
+  enrich_dimension_import(name = "where", tb_where)
+
+## -----------------------------------------------------------------------------
+tb_missing <-
+  st_mrs_age %>%
+  enrich_dimension_import_test(name = "where", ft_usa_states)
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(tb_missing, split.table = Inf)
+
+## -----------------------------------------------------------------------------
+tb_where_state <- ft_usa_states %>%
+  tibble::add_row(state = "Unknown", state_name = "Unknown")
+
+st_mrs_age <-
+  st_mrs_age %>%
+  enrich_dimension_import(name = "where", tb_where_state)
+
+st_mrs_cause <-
+  st_mrs_cause %>%
+  enrich_dimension_import(name = "where", tb_where_state)
+
+## -----------------------------------------------------------------------------
+tb_where_county <- ft_usa_city_county %>%
+  tibble::add_row(city = "Unknown",
+                  state = "Unknown",
+                  county = "Unknown")
+
+st_mrs_age <-
+  st_mrs_age %>%
+  enrich_dimension_import(name = "where", tb_where_county)
+
+st_mrs_cause <-
+  st_mrs_cause %>%
+  enrich_dimension_import(name = "where", tb_where_county)
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(head(st_mrs_age$dimension$where, 10), split.table = Inf)
+
+## -----------------------------------------------------------------------------
+ct_mrs <- constellation(list(st_mrs_age, st_mrs_cause), name = "mrs")
+
+## ---- results = "asis", echo = FALSE------------------------------------------
+pander::pandoc.table(head(ct_mrs$dimension$when), split.table = Inf)
+pander::pandoc.table(head(ct_mrs$dimension$when_available), split.table = Inf)
+pander::pandoc.table(head(ct_mrs$dimension$where), split.table = Inf)
+
+## -----------------------------------------------------------------------------
+mrs_age_definition <-
+  function(ft,
+           dm,
+           updates,
+           tb_who,
+           tb_where,
+           tb_where_state,
+           tb_where_county) {
+    star_schema(ft, dm) %>%
+      role_playing_dimension(
+        dim_names = c("when", "when_available"),
+        name = "When Common",
+        attributes = c("date", "week", "year")
+      ) %>%
+      snake_case() %>%
+      character_dimensions(NA_replacement_value = "Unknown",
+                           length_integers = list(week = 2)) %>%
+      rename_dimension_attributes(
+        name = "when",
+        attributes = c("week_ending_date", "week", "year"),
+        new_names = c(
+          "when_happened_date",
+          "when_happened_week",
+          "when_happened_year"
+        )
+      ) %>%
+      rename_dimension_attributes(
+        name = "where",
+        attributes = c("region"),
+        new_names = c("division")
+      ) %>%
+      rename_measures(measures = c("deaths"),
+                      new_names = c("n_deaths")) %>%
+      modify_dimension_records(updates) %>%
+      enrich_dimension_import(name = "who", tb_who) %>%
+      enrich_dimension_import(name = "where", tb_where) %>%
+      enrich_dimension_import(name = "where", tb_where_state) %>%
+      enrich_dimension_import(name = "where", tb_where_county)
+  }
 
 ## -----------------------------------------------------------------------------
 st_mrs_age_w10 <-
-  mrs_age_definition(mrs_age_w10, dm_mrs_age, updates_st_mrs_age)
+  mrs_age_definition(
+    mrs_age_w10,
+    dm_mrs_age,
+    updates_st_mrs_age,
+    tb_who,
+    tb_where,
+    tb_where_state,
+    tb_where_county
+  )
 
 st_mrs_age_w11 <-
-  mrs_age_definition(mrs_age_w11, dm_mrs_age, updates_st_mrs_age)
+  mrs_age_definition(
+    mrs_age_w11,
+    dm_mrs_age,
+    updates_st_mrs_age,
+    tb_who,
+    tb_where,
+    tb_where_state,
+    tb_where_county
+  )
 
 ## -----------------------------------------------------------------------------
 st_mrs_age <- st_mrs_age %>%
@@ -364,40 +509,69 @@ ct_mrs <- ct_mrs %>%
   incremental_refresh_constellation(st_mrs_age_w10, existing = "replace") %>%
   incremental_refresh_constellation(st_mrs_age_w11, existing = "replace")
 
+
 ## -----------------------------------------------------------------------------
-mrs_cause_definition <- function(ft, dm, updates) {
-  star_schema(ft, dm) %>%
-    snake_case() %>%
-    character_dimensions(
-      NA_replacement_value = "Unknown",
-      length_integers = list(
-        week = 2,
-        data_availability_week = 2,
-        reception_week = 2
-      )
-    ) %>%
-    role_playing_dimension(
-      dim_names = c("when", "when_received", "when_available"),
-      name = "when_common",
-      attributes = c("date", "week", "year")
-    ) %>%
-    rename_dimension_attributes(
-      name = "when",
-      attributes = c("week_ending_date", "week", "year"),
-      new_names = c(
-        "when_happened_date",
-        "when_happened_week",
-        "when_happened_year"
-      )
-    ) %>%
-    modify_dimension_records(updates)
-}
+mrs_cause_definition <-
+  function(ft,
+           dm,
+           updates,
+           tb_where,
+           tb_where_state,
+           tb_where_county) {
+    star_schema(ft, dm) %>%
+      snake_case() %>%
+      character_dimensions(
+        NA_replacement_value = "Unknown",
+        length_integers = list(
+          week = 2,
+          data_availability_week = 2,
+          reception_week = 2
+        )
+      ) %>%
+      role_playing_dimension(
+        dim_names = c("when", "when_received", "when_available"),
+        name = "when_common",
+        attributes = c("date", "week", "year")
+      ) %>%
+      rename_dimension_attributes(
+        name = "when",
+        attributes = c("week_ending_date", "week", "year"),
+        new_names = c(
+          "when_happened_date",
+          "when_happened_week",
+          "when_happened_year"
+        )
+      ) %>%
+      rename_dimension_attributes(
+        name = "where",
+        attributes = c("region"),
+        new_names = c("division")
+      ) %>%
+      modify_dimension_records(updates) %>%
+      enrich_dimension_import(name = "where", tb_where) %>%
+      enrich_dimension_import(name = "where", tb_where_state) %>%
+      enrich_dimension_import(name = "where", tb_where_county)
+  }
 
 st_mrs_cause_w10 <-
-  mrs_cause_definition(mrs_cause_w10, dm_mrs_cause, updates_st_mrs_age)
+  mrs_cause_definition(
+    mrs_cause_w10,
+    dm_mrs_cause,
+    updates_st_mrs_age,
+    tb_where,
+    tb_where_state,
+    tb_where_county
+  )
 
 st_mrs_cause_w11 <-
-  mrs_cause_definition(mrs_cause_w11, dm_mrs_cause, updates_st_mrs_age)
+  mrs_cause_definition(
+    mrs_cause_w11,
+    dm_mrs_cause,
+    updates_st_mrs_age,
+    tb_where,
+    tb_where_state,
+    tb_where_county
+  )
 
 st_mrs_cause <- st_mrs_cause %>%
   incremental_refresh_star_schema(st_mrs_cause_w10, existing = "group") %>%
@@ -408,38 +582,40 @@ ct_mrs <- ct_mrs %>%
   incremental_refresh_constellation(st_mrs_cause_w11, existing = "group")
 
 ## -----------------------------------------------------------------------------
-st1 <- ct_mrs$star$mrs_age %>%
+st1 <- ct_mrs %>%
+  get_star_schema("mrs_age") %>%
   filter_fact_rows(name = "where", city == "Boston")
 
-st2 <- ct_mrs$star$mrs_cause %>%
+st2 <- ct_mrs %>%
+  get_star_schema("mrs_cause") %>%
   filter_fact_rows(name = "where", city == "Boston")
 
 ## -----------------------------------------------------------------------------
-ct_mrs <- ct_mrs %>%
+ct_tmp <- ct_mrs %>%
   incremental_refresh_constellation(st1, existing = "delete") %>%
   incremental_refresh_constellation(st2, existing = "delete")
 
 ## ---- results = "asis", echo = FALSE------------------------------------------
-pander::pandoc.table(head(ct_mrs$dimension$where), split.table = Inf)
+pander::pandoc.table(head(ct_tmp$dimension$where), split.table = Inf)
 
 ## -----------------------------------------------------------------------------
-ct_mrs <- ct_mrs %>%
+ct_tmp <- ct_tmp %>%
   purge_dimensions_constellation()
 
 ## ---- results = "asis", echo = FALSE------------------------------------------
-pander::pandoc.table(head(ct_mrs$dimension$where), split.table = Inf)
+pander::pandoc.table(head(ct_tmp$dimension$where), split.table = Inf)
 
 ## -----------------------------------------------------------------------------
 tl <- st_mrs_age %>%
   star_schema_as_tibble_list()
 
 ## -----------------------------------------------------------------------------
-ms <- ct_mrs %>%
+ms_mrs <- ct_mrs %>%
   constellation_as_multistar()
 
 ## -----------------------------------------------------------------------------
-ft <- ms %>%
-  multistar_as_flat_table(name = "mrs_age")
+ft <- ms_mrs %>%
+  multistar_as_flat_table(fact = "mrs_age")
 
 ## ---- results = "asis", echo = FALSE------------------------------------------
 pander::pandoc.table(head(ft), split.table = Inf)
@@ -560,6 +736,14 @@ when <- ct_mrs %>%
   get_conformed_dimension("when")
 
 ## -----------------------------------------------------------------------------
+stn <- ct_mrs %>%
+  get_star_schema_names()
+
+## -----------------------------------------------------------------------------
+age <- ct_mrs %>%
+  get_star_schema("mrs_age")
+
+## -----------------------------------------------------------------------------
 updates <- record_update_set()
 
 ## -----------------------------------------------------------------------------
@@ -571,9 +755,9 @@ updates <- record_update_set() %>%
 ## -----------------------------------------------------------------------------
 updates <- record_update_set() %>%
   update_record(
-    dimension = where,
+    dimension = who,
     old = 1,
-    values = c("1", "CT", "Bridgeport")
+    values = c("1: <1 year")
   )
 
 ## -----------------------------------------------------------------------------
@@ -622,6 +806,18 @@ tb <- tibble::add_column(tb, x = "x", y = "y", z = "z")
 st <- enrich_dimension_import(st_mrs_age, name = "when_common", tb)
 
 ## -----------------------------------------------------------------------------
+tb <-
+  enrich_dimension_export(st_mrs_age,
+                          name = "when_common",
+                          attributes = c("week", "year"))
+
+# Add new columns with meaningful data (these are not), possibly exporting
+# data to a file, populating it and importing it.
+tb <- tibble::add_column(tb, x = "x", y = "y", z = "z")[-1, ]
+
+tb2 <- enrich_dimension_import_test(st_mrs_age, name = "when_common", tb)
+
+## -----------------------------------------------------------------------------
 st <- st_mrs_age %>%
   incremental_refresh_star_schema(st_mrs_age_w10, existing = "replace")
 
@@ -667,7 +863,7 @@ tl <- ct_mrs %>%
 
 ## -----------------------------------------------------------------------------
 ft <- ms_mrs %>%
-  multistar_as_flat_table(name = "mrs_age")
+  multistar_as_flat_table(fact = "mrs_age")
 
 ## -----------------------------------------------------------------------------
 ms_mrs <- ct_mrs %>%

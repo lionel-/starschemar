@@ -20,17 +20,19 @@
 #'
 #' ms <- dimensional_query(ms_mrs) %>%
 #'   select_dimension(name = "where",
-#'                   attributes = c("city", "state")) %>%
+#'                    attributes = c("city", "state")) %>%
 #'   select_dimension(name = "when",
-#'                   attributes = c("year")) %>%
+#'                    attributes = c("when_happened_year")) %>%
 #'   select_fact(
 #'     name = "mrs_age",
-#'     measures = c("deaths"),
+#'     measures = c("n_deaths"),
 #'     agg_functions = c("MAX")
 #'   ) %>%
-#'   select_fact(name = "mrs_cause",
-#'              measures = c("pneumonia_and_influenza_deaths", "other_deaths")) %>%
-#'   filter_dimension(name = "when", week <= "03") %>%
+#'   select_fact(
+#'     name = "mrs_cause",
+#'     measures = c("pneumonia_and_influenza_deaths", "other_deaths")
+#'   ) %>%
+#'   filter_dimension(name = "when", when_happened_week <= "03") %>%
 #'   filter_dimension(name = "where", city == "Boston") %>%
 #'   run_query()
 #'
@@ -53,7 +55,7 @@ run_query.dimensional_query <- function(dq, unify_by_grain = TRUE) {
   if (unify_by_grain) {
     dq <- unify_facts_by_grain (dq)
   }
-  class(dq$output) <- class(dq$input)
+  class(dq$output) <- class(dq$input)[1]
   dq$output
 }
 
@@ -259,4 +261,3 @@ unify_facts_by_grain <- function(dq) {
   dq$output$fact <- fact
   dq
 }
-

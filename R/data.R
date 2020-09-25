@@ -742,7 +742,7 @@
 #' Multistar for Mortality Reporting System
 #'
 #' Multistar for the Mortality Reporting System considering age and cause
-#' classification.
+#' classification. It is the result obtained in the vignette.
 #'
 #' @examples
 #' # Defined by:
@@ -752,7 +752,7 @@
 #' ms_mrs <- ct_mrs %>%
 #'   constellation_as_multistar()
 #'
-#' @format A `constellation` object.
+#' @format A `multistar` object.
 "ms_mrs"
 
 #' Multistar for Mortality Reporting System Test
@@ -768,7 +768,7 @@
 #' ms_mrs_test <- ct_mrs_test %>%
 #'   constellation_as_multistar()
 #'
-#' @format A `constellation` object.
+#' @format A `multistar` object.
 "ms_mrs_test"
 
 
@@ -787,3 +787,35 @@
 #' @source
 #'   \url{https://data.world/datagov-uk/fd864906-8456-46a8-9a01-0dcb2dbd87b9}
 "ft_datagov_uk"
+
+
+#' London Boroughs
+#'
+#' Classification of London's boroughs into zones and sub-regions.
+#'
+#' @format A `tibble`.
+#' @source \url{https://data.london.gov.uk/dataset/london-borough-profiles} and
+#' \url{https://en.wikipedia.org/wiki/List_of_sub-regions_used_in_the_London_Plan}
+"ft_london_boroughs"
+
+
+#' USA States
+#'
+#' Name and abbreviation of US states.
+#'
+#' @format A `tibble`.
+#' @source \url{https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html}
+"ft_usa_states"
+
+
+#' USA City and County
+#'
+#' City, state and county for US cities. It only includes those that appear in
+#' the Mortality Reporting System.
+#'
+#' @format A `tibble`.
+#' @source \url{https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html}
+"ft_usa_city_county"
+
+
+

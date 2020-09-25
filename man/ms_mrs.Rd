@@ -5,14 +5,14 @@
 \alias{ms_mrs}
 \title{Multistar for Mortality Reporting System}
 \format{
-A \code{constellation} object.
+A \code{multistar} object.
 }
 \usage{
 ms_mrs
 }
 \description{
 Multistar for the Mortality Reporting System considering age and cause
-classification.
+classification. It is the result obtained in the vignette.
 }
 \examples{
 # Defined by:

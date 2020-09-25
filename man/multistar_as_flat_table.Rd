@@ -3,16 +3,16 @@
 \name{multistar_as_flat_table}
 \alias{multistar_as_flat_table}
 \alias{multistar_as_flat_table.multistar}
-\title{Export a multistar as a flat table}
+\title{Export a \code{multistar} as a flat table}
 \usage{
-multistar_as_flat_table(ms, name = NULL)
+multistar_as_flat_table(ms, fact = NULL)
 
-\method{multistar_as_flat_table}{multistar}(ms, name = NULL)
+\method{multistar_as_flat_table}{multistar}(ms, fact = NULL)
 }
 \arguments{
 \item{ms}{A \code{multistar} object.}
 
-\item{name}{A string, name of the fact.}
+\item{fact}{A string, name of the fact.}
 }
 \value{
 A \code{tibble}.
@@ -26,20 +26,20 @@ not necessary to provide its name.
 library(tidyr)
 
 ft <- ms_mrs \%>\%
-  multistar_as_flat_table(name = "mrs_age")
+  multistar_as_flat_table(fact = "mrs_age")
 
 ms <- dimensional_query(ms_mrs) \%>\%
   select_dimension(name = "where",
-                  attributes = c("city", "state")) \%>\%
+                   attributes = c("city", "state")) \%>\%
   select_dimension(name = "when",
-                  attributes = c("year")) \%>\%
+                   attributes = c("when_happened_year")) \%>\%
+  select_fact(name = "mrs_age",
+              measures = c("n_deaths")) \%>\%
   select_fact(
-    name = "mrs_age",
-    measures = c("deaths")
+    name = "mrs_cause",
+    measures = c("pneumonia_and_influenza_deaths", "other_deaths")
   ) \%>\%
-  select_fact(name = "mrs_cause",
-             measures = c("pneumonia_and_influenza_deaths", "other_deaths")) \%>\%
-  filter_dimension(name = "when", week <= "03") \%>\%
+  filter_dimension(name = "when", when_happened_week <= "03") \%>\%
   filter_dimension(name = "where", city == "Boston") \%>\%
   run_query()
 
